@@ -1,0 +1,17 @@
+# Provisioned InfluxDB 2.x (Flux) datasource. Values come from the grafana container environment.
+apiVersion: 1
+datasources:
+  - name: InfluxDB-flight_telemetry
+    uid: influxdb-flight-telemetry
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    isDefault: true
+    editable: false
+    jsonData:
+      version: Flux
+      organization: ${INFLUXDB_ORG}
+      defaultBucket: ${INFLUXDB_BUCKET}
+      timeout: 30
+    secureJsonData:
+      token: ${INFLUXDB_TOKEN}

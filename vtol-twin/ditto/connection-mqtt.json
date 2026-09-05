@@ -1,0 +1,46 @@
+{
+  "name": "mqtt-telemetry",
+  "connectionType": "mqtt-5",
+  "connectionStatus": "open",
+  "uri": "tcp://mosquitto:1883",
+  "clientCount": 1,
+  "failoverEnabled": true,
+  "specificConfig": {
+    "clientId": "ditto-connectivity",
+    "cleanSession": "true",
+    "reconnectForRedelivery": "false",
+    "separatePublisher": "true"
+  },
+  "sources": [
+    {
+      "addresses": ["vtol/+/telemetry", "vtol/+/telemetry/+"],
+      "consumerCount": 1,
+      "qos": 1,
+      "authorizationContext": ["integration:mqtt-telemetry"],
+      "payloadMapping": ["telemetryMapping"],
+      "headerMapping": {},
+      "replyTarget": { "enabled": false },
+      "acknowledgementRequests": { "includes": [], "filter": "fn:filter(header:mqtt.qos,'ne','0')" }
+    }
+  ],
+  "targets": [
+    {
+      "address": "vtol/{{ thing:name }}/events",
+      "topics": ["_/_/things/twin/events?extraFields=attributes/tailNumber"],
+      "qos": 1,
+      "authorizationContext": ["integration:mqtt-telemetry"],
+      "headerMapping": { "mqtt.retain": "false" }
+    }
+  ],
+  "mappingDefinitions": {
+    "telemetryMapping": {
+      "mappingEngine": "JavaScript",
+      "options": {
+        "incomingScript": "__INCOMING_SCRIPT__",
+        "outgoingScript": "__OUTGOING_SCRIPT__",
+        "loadBytebufferJS": "false",
+        "loadLongJS": "false"
+      }
+    }
+  }
+}
