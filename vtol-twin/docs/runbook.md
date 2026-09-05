@@ -4,6 +4,27 @@
 stack (Ditto runs five JVMs). Optional: `node` and `python3 -m pytest` for the unit tests. No cloud
 access is required after the images are pulled once.
 
+## 0. Demo mode (no Docker)
+
+```bash
+cd vtol-twin
+pip install -r demo/requirements.txt
+make demo-ui                 # http://localhost:8090
+```
+
+The demo UI flies synthetic sorties (hover, transition, cruise, transition, land) against an in-memory
+copy of the Thing model. Pick a fault (rising vibration, EGT drift, servo current creep), a severity and
+a playback speed, press **Start sortie**, and watch the live features, sparklines, component life bars,
+health scores and alerts. Wear accumulates across sorties: severity 1 trips an alert in one flight, 0.5
+builds up over several. A caution opens a work order with the evidence; sign it off (repaired /
+replaced / no fault found) and the release status returns to serviceable. **Reset twin** reloads the
+model file.
+
+When the full stack is up, `make demo-ui-live` runs the same service as a container with
+`MQTT_HOST=mosquitto`, so every sample also flows through Mosquitto into Ditto (check the Ditto UI or
+`GET /api/2/things/vtol.fleet:VTOL-1/features/engine`). Running on the host with `MQTT_HOST=localhost`
+in `demo/.env` does the same.
+
 ## 1. Configure
 
 ```bash
@@ -59,7 +80,7 @@ make ps                      # health of every container
 make logs SERVICE=connectivity
 make setup                   # re-apply policy/connection after editing ditto/*.json or the mapper
 make reset-thing             # restore the Thing from ditto/thing-VTOL-1.json (loses live values)
-make test                    # mapper (node) + model/compose (pytest)
+make test                    # mapper (node) + model/compose + demo (pytest)
 make down                    # stop, keep data
 make clean                   # stop and delete all volumes
 ```

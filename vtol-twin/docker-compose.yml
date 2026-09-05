@@ -258,6 +258,31 @@ services:
       options:
         max-size: 50m
 
+  # ---------------------------------------------------------------- demo mode
+  # Synthetic sorties + web UI. Runs standalone with `make demo-ui`; as a compose service
+  # (profile "demo") it mirrors every sample onto the real MQTT topics so Ditto sees the same data.
+  demo-ui:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+    image: vtol-twin/demo:local
+    profiles: ["demo"]
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      TAIL_NUMBER: ${TAIL_NUMBER:-VTOL-1}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEMO_SPEED: ${DEMO_SPEED:-20}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${DEMO_PORT:-8090}:8090"
+    logging:
+      options:
+        max-size: 20m
+
 volumes:
   mongodb-data:
   mosquitto-data:

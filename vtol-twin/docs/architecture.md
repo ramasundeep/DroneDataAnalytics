@@ -100,6 +100,26 @@ indistinguishable downstream.
 * No cloud services; every image and package is pinned (`VERSIONS.md`) and cached locally after the
   first pull.
 
+## Demo mode (`demo/`)
+
+A FastAPI service that stands in for the whole pipeline when no Docker host is available, and doubles
+as a synthetic telemetry source when it is:
+
+* `simulator.py` - deterministic sortie profile (preflight, engine start, hover climb, forward
+  transition, fixed-wing cruise on a racetrack, back transition, hover descent, landing, shutdown)
+  emitting exactly the feature/property names of the Thing model at 1 Hz simulated time. Three
+  injectable faults: vibration rise (ducted fan), EGT drift (engine), servo3 current creep. Wear
+  accumulates across sorties on a compressed timeline.
+* `twin.py` - in-memory Thing with the same JSON-merge-patch semantics the Ditto mapper produces,
+  life-counter accrual per sortie, and a compact preview of the Phase 3/4 logic: condition scoring
+  from sortie statistics (mean vs nominal/threshold, peak exceedance), least-squares trend
+  projection over the cruise segment, alert levels, auto work orders with evidence, sign-off and
+  release status. Phases 3 and 4 replace this with the InfluxDB-backed analytics service and the
+  SQLite work-order service; the scoring constants are the starting point for those.
+* `publisher.py` - optional mirror onto `vtol/<tail>/telemetry` (paho-mqtt) so the real stack
+  receives identical data.
+* `static/` - single-page UI over Server-Sent Events, no external assets (offline-capable).
+
 ## Time-series (Phase 2 onward)
 
 InfluxDB bucket `flight_telemetry`, one measurement per feature group, tagged `tail`, `sortie`,

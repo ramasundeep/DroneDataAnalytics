@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VTOL-1 twin demo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">✈</span>
+    <div>
+      <h1>VTOL-1 digital twin <span class="tag">demo mode</span></h1>
+      <div class="sub">tail-sitter VTOL UAS · single ducted fan · heavy-fuel engine · EO/IR payload</div>
+    </div>
+  </div>
+  <div class="status-strip">
+    <div class="pill" id="release">release: –</div>
+    <div class="pill" id="mqtt">mqtt mirror: off</div>
+    <div class="pill muted" id="clock">–</div>
+    <div class="pill muted" id="conn">connecting…</div>
+  </div>
+</header>
+
+<section class="controls card">
+  <div class="ctl">
+    <label>Fault injection
+      <select id="degradation"></select>
+    </label>
+    <label>Severity <span id="severityVal">1.0</span>
+      <input id="severity" type="range" min="0" max="2" step="0.1" value="1.0">
+    </label>
+    <label>Cruise (sim s)
+      <input id="cruise" type="number" min="30" max="3600" step="30" value="480">
+    </label>
+    <label>Speed ×<span id="speedVal">20</span>
+      <input id="speed" type="range" min="1" max="120" step="1" value="20">
+    </label>
+  </div>
+  <div class="ctl buttons">
+    <button id="start" class="primary">Start sortie</button>
+    <button id="abort">Abort</button>
+    <button id="reset" class="danger">Reset twin</button>
+  </div>
+  <div class="progress">
+    <div class="bar"><div id="progressFill"></div></div>
+    <div class="phase-row" id="phaseRow"></div>
+    <div class="phase-label"><span id="sortieId">no sortie in progress</span> <span id="phaseText"></span></div>
+  </div>
+</section>
+
+<main class="grid">
+  <section class="card" id="flight">
+    <h2>Flight state</h2>
+    <div class="kv" id="flightKv"></div>
+    <canvas class="spark" id="sparkAlt" data-key="altAglM" data-label="alt AGL (m)" height="60"></canvas>
+  </section>
+
+  <section class="card" id="engine">
+    <h2>Engine</h2>
+    <div class="kv" id="engineKv"></div>
+    <canvas class="spark" id="sparkRpm" data-key="rpm" data-label="RPM" height="60"></canvas>
+    <canvas class="spark" id="sparkEgt" data-key="egtC" data-label="EGT °C" data-limit="680" height="60"></canvas>
+  </section>
+
+  <section class="card" id="vibration">
+    <h2>Vibration</h2>
+    <div class="kv" id="vibKv"></div>
+    <canvas class="spark" id="sparkVib" data-key="rmsTotal" data-label="RMS total (m/s²)" data-limit="1.8" height="60"></canvas>
+  </section>
+
+  <section class="card" id="actuation">
+    <h2>Actuation</h2>
+    <table class="mini" id="servoTable"></table>
+    <canvas class="spark" id="sparkServo" data-key="servo3CurrentA" data-label="servo3 current (A)" data-limit="1.9" height="60"></canvas>
+  </section>
+
+  <section class="card" id="power">
+    <h2>Power &amp; navigation</h2>
+    <div class="kv" id="powerKv"></div>
+    <canvas class="spark" id="sparkBus" data-key="busVoltageV" data-label="bus (V)" height="60"></canvas>
+  </section>
+
+  <section class="card" id="alerts">
+    <h2>Alerts</h2>
+    <ul class="feed" id="alertFeed"><li class="muted">none</li></ul>
+    <h2>Sorties</h2>
+    <ul class="feed" id="sortieFeed"><li class="muted">none flown yet</li></ul>
+  </section>
+
+  <section class="card wide" id="life">
+    <h2>Component life &amp; health</h2>
+    <table class="life" id="lifeTable">
+      <thead><tr><th>Component</th><th>Serial</th><th>Installed</th><th>Hours / limit</th><th>Cycles</th><th>Health</th><th>RUL (h)</th><th>Alert</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card wide" id="workorders">
+    <h2>Work orders <span class="count" id="woCount"></span></h2>
+    <div id="woList" class="wo-list"><p class="muted">No work orders. Fly a sortie with a fault injected, or fly enough sorties to approach a life limit.</p></div>
+  </section>
+</main>
+
+<footer class="foot">
+  In-memory twin loaded from <code>ditto/thing-VTOL-1.json</code>. With <code>MQTT_HOST</code> set, every sample is also published on
+  <code>vtol/VTOL-1/telemetry</code> so the real Ditto / InfluxDB / Grafana stack receives identical data.
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
