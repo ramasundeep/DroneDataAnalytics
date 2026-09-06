@@ -96,5 +96,32 @@ make clean                   # stop and delete all volumes
   volume; `make clean` or change them back.
 * **Port clash** - change `DITTO_EXTERNAL_PORT`, `MQTT_PORT`, `INFLUXDB_PORT`, `GRAFANA_PORT` in `.env`.
 
-Later phases add to this page: `make ingest-samples` (Phase 2), `make analytics-run` (Phase 3),
-work-order UI (Phase 4), `sim/` SITL launch (Phase 5).
+## 6. Telemetry pipeline (Phase 2)
+
+Host needs `pip install -r bridge/requirements.txt` (pyulog, influxdb-client, paho-mqtt, httpx).
+
+```bash
+make ingest-dry-run          # parse the 20 sample sorties, print per-sortie peaks (no services needed)
+make ingester-up             # MQTT -> InfluxDB ingester container (profile "pipeline"), health on :8091
+make ingest-samples          # .ulg -> InfluxDB + lifeCounters on the Thing (idempotent per sortie id)
+make verify-phase2           # both of the above + checks: Influx counts, Thing hours, dashboards
+make gen-samples             # regenerate data/samples (deterministic)
+```
+
+`make verify-phase2` ends with `PHASE 2 VERIFIED` and prints the Thing's engine / airframe hours,
+which must exceed the model file's 142.6 h by the 3.25 h of sample sorties. Re-running
+`make ingest-samples` rewrites telemetry (idempotent in InfluxDB) but never double-counts hours: the
+Thing remembers ingested sortie ids in `lifeCounters.ingestedSorties`.
+
+Dashboards (Grafana, folder "VTOL-1"): `/d/vtol-fleet-health`, `/d/vtol-sortie-engine` (pick a
+sortie in the variable bar; set the time range to August 2026 for the samples), `/d/vtol-component-life`.
+
+Ingest your own PX4 logs: `python -m bridge.ulog_ingest --tail VTOL-1 /path/to/log.ulg`. Logs without
+the custom topics still yield engine (if an ICE status topic exists), power, navigation and flight
+state; hours are booked from `vehicle_status`.
+
+Live telemetry goes through the same ingester: anything published on `vtol/<tail>/telemetry[/<feature>]`
+(the demo UI with `MQTT_HOST` set, the Phase 5 SITL bridge, or the aircraft) lands in InfluxDB tagged
+`source=live`.
+
+Later phases add to this page: `make analytics-run` (Phase 3), work-order UI (Phase 4), `sim/` SITL launch (Phase 5).

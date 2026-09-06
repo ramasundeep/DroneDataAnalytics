@@ -1,0 +1,655 @@
+{
+  "uid": "vtol-sortie-engine",
+  "title": "VTOL-1 sortie engine trends",
+  "tags": [
+    "vtol-twin",
+    "engine",
+    "sortie"
+  ],
+  "timezone": "utc",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "tail",
+        "label": "Tail",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb-flight-telemetry"
+        },
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "VTOL-1",
+          "value": "VTOL-1"
+        },
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"flight_telemetry\", tag: \"tail\", start: -1y)",
+        "definition": "tag values: tail",
+        "sort": 1
+      },
+      {
+        "name": "sortie",
+        "label": "Sortie",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb-flight-telemetry"
+        },
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "current": {},
+        "definition": "sortie ids for ${tail}",
+        "sort": 4,
+        "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: -1y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"sortie_summary\" and r[\"tail\"] == \"${tail}\" and r[\"_field\"] == \"flight_hours\")\n  |> keep(columns: [\"sortie\"])\n  |> distinct(column: \"sortie\")\n  |> sort(columns: [\"_value\"], desc: true)"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Engine RPM and throttle",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"engine\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"rpm\" or r[\"_field\"] == \"throttlePct\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "throttlePct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "EGT and CHT",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"engine\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"egtC\" or r[\"_field\"] == \"chtC\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "celsius",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 650
+              },
+              {
+                "color": "red",
+                "value": 680
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Fuel flow and oil pressure",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"engine\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"fuelFlowLph\" or r[\"_field\"] == \"oilPressureKpa\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "oilPressureKpa"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "pressurekpa"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Vibration RMS (m/s\u00b2)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"vibration\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"rmsX\" or r[\"_field\"] == \"rmsY\" or r[\"_field\"] == \"rmsZ\" or r[\"_field\"] == \"rmsTotal\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1.4
+              },
+              {
+                "color": "red",
+                "value": 1.8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Servo currents (A)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"actuation\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"servo1CurrentA\" or r[\"_field\"] == \"servo2CurrentA\" or r[\"_field\"] == \"servo3CurrentA\" or r[\"_field\"] == \"servo4CurrentA\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "amp",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1.5
+              },
+              {
+                "color": "red",
+                "value": 1.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Flight profile: altitude AGL and airspeed",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"flightState\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"altAglM\" or r[\"_field\"] == \"airspeedMps\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "altAglM"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "lengthm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "airspeedMps"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "velocityms"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Power: bus / battery voltage and current",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"power\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"busVoltageV\" or r[\"_field\"] == \"batteryVoltageV\" or r[\"_field\"] == \"busCurrentA\" or r[\"_field\"] == \"batteryCurrentA\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*VoltageV"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "volt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*CurrentA"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "amp"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Navigation: satellites and HDOP",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"navigation\" and r[\"tail\"] == \"${tail}\" and r[\"sortie\"] == \"${sortie}\" and (r[\"_field\"] == \"gpsSatellites\" or r[\"_field\"] == \"gpsHdop\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gpsHdop"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "name": "Sortie end",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb-flight-telemetry"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "target": {
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"sortie_summary\" and r[\"sortie\"] == \"${sortie}\" and r[\"_field\"] == \"flight_hours\")\n  |> map(fn: (r) => ({r with text: \"sortie ${sortie} ended\", title: \"landing\"}))"
+        }
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "Fleet health",
+      "type": "link",
+      "url": "/d/vtol-fleet-health",
+      "keepTime": true
+    },
+    {
+      "title": "Sortie engine trends",
+      "type": "link",
+      "url": "/d/vtol-sortie-engine",
+      "keepTime": true
+    },
+    {
+      "title": "Component life",
+      "type": "link",
+      "url": "/d/vtol-component-life",
+      "keepTime": true
+    }
+  ]
+}

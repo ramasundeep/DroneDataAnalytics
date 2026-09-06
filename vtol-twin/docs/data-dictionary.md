@@ -97,7 +97,45 @@ on the Thing itself.
 `name`, `position` (servos), `partNumber`, `serial`, `installDate` (ISO date), `lifeLimitHours`,
 `lifeLimitCycles`, `hoursConsumed`, `cyclesConsumed` (values at last maintenance-record update).
 
-## InfluxDB schema (Phase 2)
+## InfluxDB schema
 
-Bucket `flight_telemetry`; measurement = feature name; fields = the properties above; tags `tail`,
-`sortie`, `source` (`live` | `ulog` | `sitl`).
+Bucket `flight_telemetry`, all timestamps in UTC (millisecond precision).
+
+| Measurement | Tags | Fields | Written by |
+|---|---|---|---|
+| `engine`, `vibration`, `actuation`, `power`, `navigation`, `flightState` | `tail`, `sortie`, `source` | the properties above (numbers as float, bools, strings) | MQTT ingester (`source=live` / `sitl`), .ulg ingester (`source=ulog`) |
+| `sortie_summary` | `tail`, `sortie`, `source` | `flight_hours` (armed / block time), `landings`, `samples`, `degradation` (string), `egt_max_c`, `egt_mean_c`, `rpm_max`, `vib_rms_max`, `vib_rms_mean`, `servo1..4_current_max_a` | .ulg ingester, one point per sortie at landing time |
+| `life_counters` | `tail`, `component`, `sortie` | `hours`, `cycles`, `life_limit_hours`, `life_limit_cycles`, `hours_remaining`, `hours_used_pct`, `cycles_used_pct` | .ulg ingester after advancing the Thing, one point per component |
+| `health` | `tail`, `component` | `healthScore`, `rulHours`, `alertLevel` (string), `anomalyScore` | analytics service (Phase 3) |
+
+`sortie` is taken from `flightState.sortieId` (remembered per tail by the MQTT ingester) or from the
+`.ulg` info key `sortie_id`; logs without one get `YYYYMMDD-<tail>-<4-char hash>`. The tag is `none`
+until the first flightState message of a session.
+
+## ULog (.ulg) topic mapping
+
+The batch ingester (`bridge/ulog_ingest.py`) reads these uORB topics; the synthetic writer emits the same
+set. Standard PX4 names are used where the message exists; `(custom)` topics carry data PX4 does not
+log natively and would come from the OEM servo bus / power distribution / a small companion logger.
+
+| uORB topic | Fields used | Feature / property |
+|---|---|---|
+| `vehicle_status` | `arming_state` (2 = armed), `nav_state`, `vehicle_type` (1 rotary, 2 fixed wing), `in_transition_mode`, `in_transition_to_fw` | `flightState.armed`, `flightMode`, `vtolState` |
+| `vehicle_land_detected` | `landed` | joined by time into `flightState.vtolState` (`ground` while armed on the ground) |
+| `vehicle_global_position` | `lat`, `lon`, `alt` | `flightState.lat`, `lon`, `altMslM` |
+| `vehicle_local_position` | `dist_bottom`, `vx`, `vy`, `heading` (rad) | `flightState.altAglM`, `groundspeedMps`, `headingDeg` |
+| `airspeed_validated` | `true_airspeed_m_s` | `flightState.airspeedMps` |
+| `internal_combustion_engine_status` | `engine_speed_rpm`, `exhaust_gas_temperature`, `cylinder_head_temperature`, `fuel_consumption_rate_cm3pm` (→ L/h), `throttle_position_percent`, `oil_pressure`, `state` (2 = running) | `engine.*` |
+| `fuel_tank_status` | `remaining_fuel` (L) | `flightState.fuelRemainingL` |
+| `vehicle_imu_status` | `accel_vibration_metric`, `accel_clipping[3]` (summed) | `vibration.rmsTotal`, `clipCount` |
+| `vibration_rms` (custom) | `rms_x`, `rms_y`, `rms_z` | `vibration.rmsX/Y/Z` |
+| `actuator_outputs` | `output[0..3]` (PWM µs, 1500 ± 500 = ±30°) | `actuation.servoNPositionDeg` |
+| `servo_telemetry` (custom) | `current_a[4]` | `actuation.servoNCurrentA` |
+| `battery_status` | `voltage_v`, `current_a`, `remaining` (0..1), `temperature` | `power.battery*` |
+| `bus_power` (custom) | `bus_voltage_v`, `bus_current_a` | `power.busVoltageV`, `busCurrentA` |
+| `sensor_gps` | `fix_type`, `satellites_used`, `hdop`, `time_utc_usec` (absolute time base) | `navigation.gps*` |
+| `ins_status` (custom) | `status` (0 unknown, 1 aligning, 2 ok, 3 degraded, 4 failed), `aligned` | `navigation.insStatus`, `insAligned` |
+
+Info keys read when present: `tail_number`, `sortie_id`, `degradation` (synthetic logs only),
+`time_start_utc_usec` (fallback time base when GPS UTC is absent). Flight hours = time with
+`arming_state == 2`; landings = armed→disarmed transitions.

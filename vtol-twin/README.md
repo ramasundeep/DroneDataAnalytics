@@ -21,4 +21,5 @@ Full stack (Docker Compose v2, curl, jq on the host):
 cp .env.example .env      # review passwords/ports
 make demo                 # up + wait for health + create Thing/policy/connection + verify
 make demo-ui-live         # demo UI as a container, telemetry mirrored into Mosquitto -> Ditto
+make verify-phase2        # MQTT->Influx ingester + 20 sample .ulg sorties into Influx/Thing, dashboards
 ```

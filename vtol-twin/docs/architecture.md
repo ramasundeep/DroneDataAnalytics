@@ -120,11 +120,33 @@ as a synthetic telemetry source when it is:
   receives identical data.
 * `static/` - single-page UI over Server-Sent Events, no external assets (offline-capable).
 
-## Time-series (Phase 2 onward)
+## Telemetry pipeline (`bridge/`, `common/`)
 
-InfluxDB bucket `flight_telemetry`, one measurement per feature group, tagged `tail`, `sortie`,
-`source` (`live` / `ulog` / `sitl`). Grafana is provisioned as code from `grafana/provisioning` and
-`dashboards/`.
+* `common/` - shared clients: `DittoClient` (REST, merge patches through nginx basic auth),
+  `InfluxSink` + `points_from_features` (feature dict -> line protocol; `ts` property -> point time),
+  JSON-lines logging.
+* `bridge/telemetry.py` - Python twin of the Ditto JavaScript mapper, so the MQTT ingester and Ditto
+  agree on what a telemetry message means.
+* `bridge/mqtt_ingest.py` - long-running service (compose profile `pipeline`): subscribes to
+  `vtol/+/telemetry` and `vtol/+/telemetry/+`, batches writes to InfluxDB, remembers the current
+  sortie id per tail from `flightState.sortieId`, serves `/health`.
+* `bridge/mapping.py` - the uORB topic <-> feature mapping in both directions (table in
+  `docs/data-dictionary.md`). Standard PX4 topics where they exist, four documented custom topics for
+  data PX4 does not log (servo currents, 28 V bus, INS summary, per-axis vibration).
+* `bridge/ulog_ingest.py` - batch ingester: pyulog -> feature samples -> InfluxDB, plus a
+  `sortie_summary` point (flight hours, landings, per-signal peaks/means) and `life_counters` points,
+  and the Thing's `lifeCounters` advanced once per sortie id (`bridge/lifecounters.py`, idempotent).
+* `bridge/ulog_writer.py` - minimal ULog v1 writer used by `data/samples/generate_samples.py`; the
+  synthetic set is 20 real `.ulg` files that pyulog parses like any PX4 log, so the batch path is
+  exercised end to end offline. Sorties 07 (EGT drift), 12-14 (vibration rising sortie over sortie)
+  and 18 (servo 3 current creep) carry injected degradation; `manifest.json` lists them.
+
+## Time-series
+
+InfluxDB bucket `flight_telemetry` (schema in `docs/data-dictionary.md`). Grafana is provisioned as
+code: datasource from `grafana/provisioning/datasources`, dashboards from `dashboards/`
+(`vtol-fleet-health`, `vtol-sortie-engine`, `vtol-component-life`; stable UIDs so work orders can
+deep-link to a sortie's time window).
 
 ## Persistence
 

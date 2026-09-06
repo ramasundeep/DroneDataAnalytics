@@ -9,6 +9,11 @@
 | InfluxDB | `influxdb` | 2.7.12-alpine | time-series store |
 | Grafana OSS | `grafana/grafana-oss` | 12.4.3 | dashboards |
 | Python | `python` | 3.11-slim (services, Phase 2+) | |
+| paho-mqtt | pip | 2.1.0 | demo mirror, MQTT ingester |
+| influxdb-client | pip | 1.48.0 | ingesters, analytics |
+| pyulog | pip | 1.2.0 | .ulg batch ingester |
+| httpx | pip | 0.28.1 | Ditto REST client |
+| fastapi / uvicorn / pydantic | pip | 0.115.6 / 0.34.0 / 2.10.4 | demo, analytics, maintenance services |
 | pytest | pip | 8.3.4 | dev only |
 
 Python service dependencies (FastAPI, paho-mqtt, pymavlink, pyulog, influxdb-client, scikit-learn, pandas)

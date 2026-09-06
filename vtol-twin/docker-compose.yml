@@ -258,6 +258,36 @@ services:
       options:
         max-size: 50m
 
+  # ------------------------------------------------------------ telemetry pipeline
+  # MQTT -> InfluxDB ingester (Phase 2). Profile "pipeline" so the Phase 1 stack stays minimal.
+  mqtt-ingester:
+    build:
+      context: .
+      dockerfile: bridge/Dockerfile
+    image: vtol-twin/bridge:local
+    profiles: ["pipeline"]
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:?set INFLUXDB_TOKEN in .env}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-vtol}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-flight_telemetry}
+      SOURCE_TAG: live
+      INGEST_PORT: 8091
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${INGEST_PORT:-8091}:8091"
+    logging:
+      options:
+        max-size: 20m
+
   # ---------------------------------------------------------------- demo mode
   # Synthetic sorties + web UI. Runs standalone with `make demo-ui`; as a compose service
   # (profile "demo") it mirrors every sample onto the real MQTT topics so Ditto sees the same data.

@@ -1,0 +1,5 @@
+paho-mqtt==2.1.0
+influxdb-client==1.48.0
+pyulog==1.2.0
+httpx==0.28.1
+numpy>=1.26,<3
