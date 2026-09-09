@@ -288,6 +288,42 @@ services:
       options:
         max-size: 20m
 
+  # Anomaly detection + RUL (Phase 3). Reads the bucket, writes `health` to the Thing and InfluxDB.
+  analytics:
+    build:
+      context: .
+      dockerfile: analytics/Dockerfile
+    image: vtol-twin/analytics:local
+    profiles: ["pipeline"]
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      ditto-nginx:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    environment:
+      ANALYTICS_SOURCE: ${ANALYTICS_SOURCE:-influx}
+      ANALYTICS_INTERVAL_S: ${ANALYTICS_INTERVAL_S:-900}
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:?set INFLUXDB_TOKEN in .env}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-vtol}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-flight_telemetry}
+      DITTO_URL: http://ditto-nginx
+      DITTO_USER: analytics
+      DITTO_PASSWORD: ${ANALYTICS_DITTO_PASSWORD:?set ANALYTICS_DITTO_PASSWORD in .env}
+      THING_ID: ${THING_ID:-vtol.fleet:VTOL-1}
+      TAIL_NUMBER: ${TAIL_NUMBER:-VTOL-1}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${ANALYTICS_PORT:-8092}:8092"
+    logging:
+      options:
+        max-size: 20m
+
   # ---------------------------------------------------------------- demo mode
   # Synthetic sorties + web UI. Runs standalone with `make demo-ui`; as a compose service
   # (profile "demo") it mirrors every sample onto the real MQTT topics so Ditto sees the same data.

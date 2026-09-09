@@ -14,6 +14,7 @@
 | pyulog | pip | 1.2.0 | .ulg batch ingester |
 | httpx | pip | 0.28.1 | Ditto REST client |
 | fastapi / uvicorn / pydantic | pip | 0.115.6 / 0.34.0 / 2.10.4 | demo, analytics, maintenance services |
+| scikit-learn / pandas | pip | 1.6.1 / 2.2.3 | analytics |
 | pytest | pip | 8.3.4 | dev only |
 
 Python service dependencies (FastAPI, paho-mqtt, pymavlink, pyulog, influxdb-client, scikit-learn, pandas)

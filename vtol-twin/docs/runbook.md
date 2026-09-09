@@ -80,7 +80,7 @@ make ps                      # health of every container
 make logs SERVICE=connectivity
 make setup                   # re-apply policy/connection after editing ditto/*.json or the mapper
 make reset-thing             # restore the Thing from ditto/thing-VTOL-1.json (loses live values)
-make test                    # mapper (node) + model/compose + demo (pytest)
+make test                    # mapper (node) + model/compose + demo + bridge + analytics (pytest)
 make down                    # stop, keep data
 make clean                   # stop and delete all volumes
 ```
@@ -124,4 +124,25 @@ Live telemetry goes through the same ingester: anything published on `vtol/<tail
 (the demo UI with `MQTT_HOST` set, the Phase 5 SITL bridge, or the aircraft) lands in InfluxDB tagged
 `source=live`.
 
-Later phases add to this page: `make analytics-run` (Phase 3), work-order UI (Phase 4), `sim/` SITL launch (Phase 5).
+## 7. Predictive maintenance (Phase 3)
+
+Host needs `pip install -r analytics/requirements.txt` (adds scikit-learn, pandas).
+
+```bash
+make analytics-run           # offline: score the 20 sample sorties, print per-sortie anomalies + component health
+make analytics-up            # analytics service container (profile "pipeline"), API on :8092
+make verify-phase3           # POST /run, check the degraded sorties are flagged and the Thing carries health
+make analytics-write         # one-off: score from InfluxDB on the host and write to the Thing
+```
+
+`make analytics-run` needs nothing running: it prints a table with one row per sortie (anomaly score,
+robust z and IsolationForest z per group, flag, injected fault) and one per component (health score,
+RUL, trend RUL, alert, indicator level vs limit). Expected: sorties 07, 12, 13, 14 and 18 flagged,
+all others clean, servo 3 at caution at the end (recent exceedance), everything else normal.
+
+The service re-scores after every ingested sortie (it listens for `lifeCounters` events on
+`vtol/+/events`) and every `ANALYTICS_INTERVAL_S`. Results: `GET http://localhost:8092/latest`,
+Thing feature `health` (`.../features/health/properties`), Grafana fleet dashboard (health bars),
+InfluxDB measurements `health` and `anomaly`. Method: `docs/analytics.md`.
+
+Later phases add to this page: work-order UI (Phase 4), `sim/` SITL launch (Phase 5).

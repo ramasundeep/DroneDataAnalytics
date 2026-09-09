@@ -86,9 +86,14 @@ on the Thing itself.
 
 | Property | Unit | Type | Source | Notes |
 |---|---|---|---|---|
-| `<component>.healthScore` | 0-100 | number | analytics | 100 = nominal |
-| `<component>.rulHours` | h | number | analytics | min(life-limit remaining, trend projection) |
+| `<component>.healthScore` | 0-100 | number | analytics | 100 = nominal (formula in docs/analytics.md) |
+| `<component>.rulHours` | h | number | analytics | min(`rulLifeHours`, `rulTrendHours`) |
+| `<component>.rulLifeHours` | h | number | analytics | hours to the hour limit or the cycle limit's hour-equivalent |
+| `<component>.rulTrendHours` | h | number or null | analytics | projection of the condition indicator to its limit; null when not elevated or not rising |
 | `<component>.alertLevel` | - | string | analytics | `normal` < `advisory` < `caution` < `warning`; `caution`+ opens a work order |
+| `<component>.anomalyScore` | 0-1 | number | analytics | anomaly attributed to this component on the last sortie (0.5 = flag boundary) |
+| `<component>.evidence` | - | object | analytics | `indicator`, `level`, `nominal`, `threshold`, `conditionRatio`, `slopePerHour`, `trendRulHours`, `lifeRatio`, `lastExceedance` {`sortieId`, `signal`, `peak`, `limit`, `at`, `recent`} |
+| `lastRun` | - | object | analytics | `at`, `sortiesScored`, `worstAlert`, `lastSortieId`, `lastSortieFlagged`, `flaggedGroups` |
 | `aircraft.releaseStatus` | - | string | maintenance | `serviceable`, `unserviceable`, `limited` |
 | `aircraft.openWorkOrders` | count | integer | maintenance | |
 
@@ -106,7 +111,8 @@ Bucket `flight_telemetry`, all timestamps in UTC (millisecond precision).
 | `engine`, `vibration`, `actuation`, `power`, `navigation`, `flightState` | `tail`, `sortie`, `source` | the properties above (numbers as float, bools, strings) | MQTT ingester (`source=live` / `sitl`), .ulg ingester (`source=ulog`) |
 | `sortie_summary` | `tail`, `sortie`, `source` | `flight_hours` (armed / block time), `landings`, `samples`, `degradation` (string), `egt_max_c`, `egt_mean_c`, `rpm_max`, `vib_rms_max`, `vib_rms_mean`, `servo1..4_current_max_a` | .ulg ingester, one point per sortie at landing time |
 | `life_counters` | `tail`, `component`, `sortie` | `hours`, `cycles`, `life_limit_hours`, `life_limit_cycles`, `hours_remaining`, `hours_used_pct`, `cycles_used_pct` | .ulg ingester after advancing the Thing, one point per component |
-| `health` | `tail`, `component` | `healthScore`, `rulHours`, `alertLevel` (string), `anomalyScore` | analytics service (Phase 3) |
+| `health` | `tail`, `component` | `healthScore`, `rulHours`, `rulLifeHours`, `rulTrendHours`, `anomalyScore`, `alertLevel` (string), `alertRank` (0-3) | analytics service, one point per component per run |
+| `anomaly` | `tail`, `sortie`, `group` | `score` (0-1), `flagged` (bool), `zmax`, `ifZ`, `topFeature` (string), `baselineN` | analytics service, one point per sortie and signal group at sortie end |
 
 `sortie` is taken from `flightState.sortieId` (remembered per tail by the MQTT ingester) or from the
 `.ulg` info key `sortie_id`; logs without one get `YYYYMMDD-<tail>-<4-char hash>`. The tag is `none`

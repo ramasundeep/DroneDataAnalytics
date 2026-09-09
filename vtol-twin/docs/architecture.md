@@ -19,7 +19,7 @@ The aircraft is referred to only as `VTOL-1` (tail number) and `vtol.fleet:VTOL-
 | 1 | Twin state | Eclipse Ditto 3.9 + MongoDB 7 | The aircraft as a Ditto *Thing*: attributes = configuration, features = live state |
 | 2 | Connectivity | Eclipse Mosquitto 2 (MQTT 5) | Single ingress for telemetry (real or simulated) and egress for twin events |
 | 3 | Time-series | InfluxDB 2.7 + Grafana 12 | Full-rate telemetry history, dashboards (Phase 2) |
-| 4 | Analytics | Python / FastAPI | Anomaly detection + RUL, writes `health` feature back to the Thing (Phase 3) |
+| 4 | Analytics | Python / FastAPI, scikit-learn | Anomaly detection + RUL, writes `health` feature back to the Thing |
 | 5 | Maintenance | Python / FastAPI + SQLite | Work orders, release status, scheduled-maintenance rules, web UI (Phase 4) |
 
 Simulation feed (Phase 5): PX4 SITL + Gazebo tail-sitter -> MAVLink -> `bridge/` (pymavlink) -> MQTT.
@@ -140,6 +140,18 @@ as a synthetic telemetry source when it is:
   synthetic set is 20 real `.ulg` files that pyulog parses like any PX4 log, so the batch path is
   exercised end to end offline. Sorties 07 (EGT drift), 12-14 (vibration rising sortie over sortie)
   and 18 (servo 3 current creep) carry injected degradation; `manifest.json` lists them.
+
+## Analytics (`analytics/`)
+
+FastAPI service (compose profile `pipeline`, port 8092) that scores every sortie of the tail in
+chronological order: per-sortie features per signal group (`features.py`), rolling robust baseline +
+IsolationForest anomaly detection (`anomaly.py`), life-limit and trend-projection RUL with the health
+score and alert level (`rul.py`), orchestration and the Ditto / InfluxDB writes (`engine.py`). Runs on
+a schedule and after each ingested sortie (Ditto `lifeCounters` event over MQTT). Reads sorties from
+InfluxDB (live) or `.ulg` files (offline CLI `analytics/run.py`). Method and tuning knobs:
+`docs/analytics.md`. Writes the Thing's `health` feature (per component: `healthScore`, `rulHours`,
+`rulLifeHours`, `rulTrendHours`, `alertLevel`, `anomalyScore`, `evidence`; plus `lastRun`) and the
+`health` / `anomaly` measurements.
 
 ## Time-series
 

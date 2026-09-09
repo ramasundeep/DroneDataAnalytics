@@ -123,8 +123,9 @@ def test_generic_designation_used_consistently():
 
 @pytest.mark.skipif(shutil.which("docker") is None, reason="docker CLI not installed")
 def test_compose_file_is_valid():
-    env = dict(os.environ, DITTO_DEVOPS_PASSWORD="x", INFLUXDB_INIT_PASSWORD="x",
-               INFLUXDB_TOKEN="x", GRAFANA_ADMIN_PASSWORD="x")
-    res = subprocess.run(["docker", "compose", "--env-file", "/dev/null", "config", "--quiet"],
+    env = dict(os.environ, DITTO_DEVOPS_PASSWORD="x", INFLUXDB_INIT_PASSWORD="x", INFLUXDB_TOKEN="x",
+               GRAFANA_ADMIN_PASSWORD="x", ANALYTICS_DITTO_PASSWORD="x", MAINTENANCE_DITTO_PASSWORD="x")
+    res = subprocess.run(["docker", "compose", "--env-file", "/dev/null", "--profile", "pipeline", "--profile", "demo",
+                          "config", "--quiet"],
                          cwd=ROOT, env=env, capture_output=True, text=True)
     assert res.returncode == 0, res.stderr

@@ -6,6 +6,7 @@ mission simulation / what-if analysis, and predictive maintenance with work-orde
 * `docs/architecture.md` - layers, data flow, topic scheme, Thing model design
 * `docs/runbook.md` - cold start to demo on one page
 * `docs/data-dictionary.md` - every telemetry field, units, source, update rate
+* `docs/analytics.md` - anomaly detection and RUL method, thresholds, path to C-MAPSS-style models
 * `VERSIONS.md` - pinned versions
 
 Demo mode, no Docker needed (Python 3.11+):
@@ -22,4 +23,6 @@ cp .env.example .env      # review passwords/ports
 make demo                 # up + wait for health + create Thing/policy/connection + verify
 make demo-ui-live         # demo UI as a container, telemetry mirrored into Mosquitto -> Ditto
 make verify-phase2        # MQTT->Influx ingester + 20 sample .ulg sorties into Influx/Thing, dashboards
+make analytics-run        # offline anomaly detection + RUL over the samples (no services needed)
+make verify-phase3        # analytics service: degraded sorties flagged, Thing carries health scores
 ```
