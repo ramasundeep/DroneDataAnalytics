@@ -27,3 +27,10 @@ Thumbs.db
 *.log
 *.tlv
 !requirements.txt
+
+# vtol-twin (digital twin prototype)
+vtol-twin/.env
+vtol-twin/ditto/nginx/nginx.htpasswd
+vtol-twin/**/__pycache__/
+vtol-twin/.pytest_cache/
+vtol-twin/demo/.env

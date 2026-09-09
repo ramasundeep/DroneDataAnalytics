@@ -1,0 +1,320 @@
+{
+  "uid": "vtol-component-life",
+  "title": "VTOL-1 component life remaining",
+  "tags": [
+    "vtol-twin",
+    "life"
+  ],
+  "timezone": "utc",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "tail",
+        "label": "Tail",
+        "type": "query",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "influxdb-flight-telemetry"
+        },
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "VTOL-1",
+          "value": "VTOL-1"
+        },
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"flight_telemetry\", tag: \"tail\", start: -1y)",
+        "definition": "tag values: tail",
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "bargauge",
+      "title": "Hours remaining to life limit",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: -1y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"life_counters\" and r[\"tail\"] == \"${tail}\" and r[\"_field\"] == \"hours_remaining\")\n  |> group(columns: [\"component\"])\n  |> last()\n  |> keep(columns: [\"component\", \"_value\"])"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "minVizHeight": 16,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "unit": "h",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 25
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 120
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "bargauge",
+      "title": "Hours used (% of limit)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: -1y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"life_counters\" and r[\"tail\"] == \"${tail}\" and r[\"_field\"] == \"hours_used_pct\")\n  |> group(columns: [\"component\"])\n  |> last()\n  |> keep(columns: [\"component\", \"_value\"])"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "minVizHeight": 16,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "bargauge",
+      "title": "Cycles used (% of limit)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: -1y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"life_counters\" and r[\"tail\"] == \"${tail}\" and r[\"_field\"] == \"cycles_used_pct\")\n  |> group(columns: [\"component\"])\n  |> last()\n  |> keep(columns: [\"component\", \"_value\"])"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "minVizHeight": 16,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Cumulative hours per component",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influxdb-flight-telemetry"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "influxdb-flight-telemetry"
+          },
+          "query": "from(bucket: \"flight_telemetry\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"life_counters\" and r[\"tail\"] == \"${tail}\" and r[\"_field\"] == \"hours\")\n  |> keep(columns: [\"_time\", \"_value\", \"component\"])\n  |> group(columns: [\"component\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": {
+            "lineWidth": 2,
+            "showPoints": "always",
+            "pointSize": 4,
+            "lineInterpolation": "stepAfter"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "Fleet health",
+      "type": "link",
+      "url": "/d/vtol-fleet-health",
+      "keepTime": true
+    },
+    {
+      "title": "Sortie engine trends",
+      "type": "link",
+      "url": "/d/vtol-sortie-engine",
+      "keepTime": true
+    },
+    {
+      "title": "Component life",
+      "type": "link",
+      "url": "/d/vtol-component-life",
+      "keepTime": true
+    }
+  ]
+}

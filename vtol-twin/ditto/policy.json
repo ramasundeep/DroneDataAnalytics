@@ -1,0 +1,36 @@
+{
+  "policyId": "vtol.fleet:vtol-policy",
+  "entries": {
+    "OPERATOR": {
+      "subjects": {
+        "nginx:ditto": { "type": "operator login, basic auth terminated by nginx" }
+      },
+      "resources": {
+        "thing:/":   { "grant": ["READ", "WRITE"], "revoke": [] },
+        "policy:/":  { "grant": ["READ", "WRITE"], "revoke": [] },
+        "message:/": { "grant": ["READ", "WRITE"], "revoke": [] }
+      }
+    },
+    "TELEMETRY": {
+      "subjects": {
+        "integration:mqtt-telemetry": { "type": "Ditto MQTT connection (bridge / aircraft telemetry)" }
+      },
+      "resources": {
+        "thing:/":          { "grant": ["READ"], "revoke": [] },
+        "thing:/features":  { "grant": ["READ", "WRITE"], "revoke": [] }
+      }
+    },
+    "SERVICES": {
+      "subjects": {
+        "nginx:analytics":   { "type": "analytics service (Phase 3)" },
+        "nginx:maintenance": { "type": "maintenance workflow service (Phase 4)" }
+      },
+      "resources": {
+        "thing:/":            { "grant": ["READ"], "revoke": [] },
+        "thing:/features":    { "grant": ["READ", "WRITE"], "revoke": [] },
+        "thing:/attributes":  { "grant": ["READ", "WRITE"], "revoke": [] },
+        "message:/":          { "grant": ["READ", "WRITE"], "revoke": [] }
+      }
+    }
+  }
+}

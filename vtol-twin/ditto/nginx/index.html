@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>VTOL-1 digital twin</title>
+<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:3rem auto;line-height:1.5}code{background:#eee;padding:0 .3em}</style></head>
+<body>
+<h1>VTOL-1 digital twin</h1>
+<ul>
+  <li><a href="/ui/">Ditto explorer UI</a> (log in with the operator user from <code>.env</code>)</li>
+  <li><a href="/api/2/things/vtol.fleet:VTOL-1">Thing: vtol.fleet:VTOL-1</a> (REST, basic auth)</li>
+  <li><a href="/health">Ditto health</a> &middot; <a href="/status">cluster status</a></li>
+  <li>Grafana: <a href="http://localhost:3000/">localhost:3000</a> &middot; InfluxDB: <a href="http://localhost:8086/">localhost:8086</a></li>
+</ul>
+<p>Publish telemetry to <code>vtol/VTOL-1/telemetry/&lt;feature&gt;</code> on MQTT port 1883; see <code>docs/runbook.md</code>.</p>
+</body></html>

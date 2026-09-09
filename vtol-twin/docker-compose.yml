@@ -1,0 +1,357 @@
+# VTOL-1 digital twin - single-host stack.
+#
+# Layers:
+#   twin state    : Eclipse Ditto (policies, things, things-search, connectivity, gateway) + MongoDB
+#   connectivity  : Eclipse Mosquitto (MQTT 5)
+#   time-series   : InfluxDB 2.x + Grafana OSS
+#   analytics     : added in Phase 3
+#   maintenance   : added in Phase 4
+#
+# All image tags are pinned; see VERSIONS.md. Runtime settings come from .env (copy .env.example).
+
+x-ditto-java-opts: &ditto-java-opts
+  -XX:ActiveProcessorCount=2 -XX:+ExitOnOutOfMemoryError -XX:+UseContainerSupport
+  -XX:+UseStringDeduplication -Xss512k -XX:MaxRAMPercentage=50 -XX:+UseG1GC -XX:MaxGCPauseMillis=150
+  -Dpekko.coordinated-shutdown.exit-jvm=on -Dpekko.cluster.shutdown-after-unsuccessful-join-seed-nodes=180s
+  -Dpekko.cluster.failure-detector.threshold=15.0 -Dpekko.cluster.failure-detector.expected-response-after=10s
+  -Dpekko.cluster.failure-detector.acceptable-heartbeat-pause=20s -Dpekko.cluster.downing-provider-class=
+
+x-ditto-service: &ditto-service
+  restart: unless-stopped
+  networks:
+    default:
+      aliases:
+        - ditto-cluster
+  healthcheck:
+    test: ["CMD-SHELL", "curl --fail $$(hostname):7626/alive || exit 1"]
+    interval: 30s
+    timeout: 15s
+    retries: 4
+    start_period: 120s
+  logging:
+    options:
+      max-size: 50m
+
+services:
+  # ---------------------------------------------------------------- twin state
+  mongodb:
+    image: docker.io/mongo:${MONGO_VERSION:-7.0.40}
+    restart: unless-stopped
+    command: mongod --storageEngine wiredTiger --noscripting
+    environment:
+      TZ: ${TZ:-UTC}
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      options:
+        max-size: 50m
+
+  policies:
+    <<: *ditto-service
+    image: docker.io/eclipse/ditto-policies:${DITTO_VERSION:-3.9.7}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-UTC}
+      BIND_HOSTNAME: 0.0.0.0
+      MONGO_DB_HOSTNAME: mongodb
+      JAVA_TOOL_OPTIONS: *ditto-java-opts
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  things:
+    <<: *ditto-service
+    image: docker.io/eclipse/ditto-things:${DITTO_VERSION:-3.9.7}
+    depends_on:
+      - policies
+    environment:
+      TZ: ${TZ:-UTC}
+      BIND_HOSTNAME: 0.0.0.0
+      MONGO_DB_HOSTNAME: mongodb
+      JAVA_TOOL_OPTIONS: *ditto-java-opts
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  things-search:
+    <<: *ditto-service
+    image: docker.io/eclipse/ditto-things-search:${DITTO_VERSION:-3.9.7}
+    depends_on:
+      - policies
+    environment:
+      TZ: ${TZ:-UTC}
+      BIND_HOSTNAME: 0.0.0.0
+      MONGO_DB_HOSTNAME: mongodb
+      JAVA_TOOL_OPTIONS: *ditto-java-opts
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  connectivity:
+    <<: *ditto-service
+    image: docker.io/eclipse/ditto-connectivity:${DITTO_VERSION:-3.9.7}
+    depends_on:
+      - policies
+      - mosquitto
+    environment:
+      TZ: ${TZ:-UTC}
+      BIND_HOSTNAME: 0.0.0.0
+      MONGO_DB_HOSTNAME: mongodb
+      JAVA_TOOL_OPTIONS: *ditto-java-opts
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+
+  gateway:
+    <<: *ditto-service
+    image: docker.io/eclipse/ditto-gateway:${DITTO_VERSION:-3.9.7}
+    depends_on:
+      - policies
+    environment:
+      TZ: ${TZ:-UTC}
+      BIND_HOSTNAME: 0.0.0.0
+      ENABLE_PRE_AUTHENTICATION: "true"
+      DEVOPS_PASSWORD: ${DITTO_DEVOPS_PASSWORD:?set DITTO_DEVOPS_PASSWORD in .env}
+      JAVA_TOOL_OPTIONS: *ditto-java-opts
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  ditto-ui:
+    image: docker.io/eclipse/ditto-ui:${DITTO_VERSION:-3.9.7}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+    logging:
+      options:
+        max-size: 10m
+
+  # nginx terminates basic auth and forwards the identity to Ditto via x-ditto-pre-authenticated.
+  # The htpasswd file is generated from .env by scripts/gen-htpasswd.sh (never committed).
+  ditto-nginx:
+    image: docker.io/nginx:${NGINX_VERSION:-1.27-alpine}
+    restart: unless-stopped
+    depends_on:
+      - gateway
+      - ditto-ui
+    volumes:
+      - ./ditto/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ditto/nginx/nginx.htpasswd:/etc/nginx/nginx.htpasswd:ro
+      - ./ditto/nginx/nginx-cors.conf:/etc/nginx/nginx-cors.conf:ro
+      - ./ditto/nginx/mime.types:/etc/nginx/mime.types:ro
+      - ./ditto/nginx/index.html:/etc/nginx/html/index.html:ro
+    ports:
+      - "${DITTO_EXTERNAL_PORT:-8080}:80"
+    healthcheck:
+      # /health is proxied to the Ditto gateway and only returns 200 once the whole cluster is up.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+    logging:
+      options:
+        max-size: 10m
+
+  # -------------------------------------------------------------- connectivity
+  mosquitto:
+    image: docker.io/eclipse-mosquitto:${MOSQUITTO_VERSION:-2.0.22}
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -t '$$SYS/broker/uptime' -C 1 -W 3 -i healthcheck || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    logging:
+      options:
+        max-size: 20m
+
+  # --------------------------------------------------------------- time-series
+  influxdb:
+    image: docker.io/influxdb:${INFLUXDB_VERSION:-2.7.12-alpine}
+    restart: unless-stopped
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_INIT_USERNAME:-admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_INIT_PASSWORD:?set INFLUXDB_INIT_PASSWORD in .env}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:-vtol}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:-flight_telemetry}
+      DOCKER_INFLUXDB_INIT_RETENTION: ${INFLUXDB_RETENTION:-0}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN:?set INFLUXDB_TOKEN in .env}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    ports:
+      - "${INFLUXDB_PORT:-8086}:8086"
+    healthcheck:
+      test: ["CMD-SHELL", "influx ping --host http://127.0.0.1:8086 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    logging:
+      options:
+        max-size: 50m
+
+  grafana:
+    image: docker.io/grafana/grafana-oss:${GRAFANA_VERSION:-12.4.3}
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      # consumed by grafana/provisioning/datasources/influxdb.yml
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-vtol}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-flight_telemetry}
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:?set INFLUXDB_TOKEN in .env}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    logging:
+      options:
+        max-size: 50m
+
+  # ------------------------------------------------------------ telemetry pipeline
+  # MQTT -> InfluxDB ingester (Phase 2). Profile "pipeline" so the Phase 1 stack stays minimal.
+  mqtt-ingester:
+    build:
+      context: .
+      dockerfile: bridge/Dockerfile
+    image: vtol-twin/bridge:local
+    profiles: ["pipeline"]
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:?set INFLUXDB_TOKEN in .env}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-vtol}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-flight_telemetry}
+      SOURCE_TAG: live
+      INGEST_PORT: 8091
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${INGEST_PORT:-8091}:8091"
+    logging:
+      options:
+        max-size: 20m
+
+  # Anomaly detection + RUL (Phase 3). Reads the bucket, writes `health` to the Thing and InfluxDB.
+  analytics:
+    build:
+      context: .
+      dockerfile: analytics/Dockerfile
+    image: vtol-twin/analytics:local
+    profiles: ["pipeline"]
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      ditto-nginx:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    environment:
+      ANALYTICS_SOURCE: ${ANALYTICS_SOURCE:-influx}
+      ANALYTICS_INTERVAL_S: ${ANALYTICS_INTERVAL_S:-900}
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN:?set INFLUXDB_TOKEN in .env}
+      INFLUXDB_ORG: ${INFLUXDB_ORG:-vtol}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET:-flight_telemetry}
+      DITTO_URL: http://ditto-nginx
+      DITTO_USER: analytics
+      DITTO_PASSWORD: ${ANALYTICS_DITTO_PASSWORD:?set ANALYTICS_DITTO_PASSWORD in .env}
+      THING_ID: ${THING_ID:-vtol.fleet:VTOL-1}
+      TAIL_NUMBER: ${TAIL_NUMBER:-VTOL-1}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${ANALYTICS_PORT:-8092}:8092"
+    logging:
+      options:
+        max-size: 20m
+
+  # ---------------------------------------------------------------- demo mode
+  # Synthetic sorties + web UI. Runs standalone with `make demo-ui`; as a compose service
+  # (profile "demo") it mirrors every sample onto the real MQTT topics so Ditto sees the same data.
+  demo-ui:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+    image: vtol-twin/demo:local
+    profiles: ["demo"]
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      TAIL_NUMBER: ${TAIL_NUMBER:-VTOL-1}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEMO_SPEED: ${DEMO_SPEED:-20}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${DEMO_PORT:-8090}:8090"
+    logging:
+      options:
+        max-size: 20m
+
+volumes:
+  mongodb-data:
+  mosquitto-data:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:

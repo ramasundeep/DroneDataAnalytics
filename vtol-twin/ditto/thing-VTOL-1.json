@@ -1,0 +1,236 @@
+{
+  "thingId": "vtol.fleet:VTOL-1",
+  "policyId": "vtol.fleet:vtol-policy",
+  "attributes": {
+    "tailNumber": "VTOL-1",
+    "class": "tail-sitter VTOL UAS, single ducted fan, heavy-fuel engine, EO/IR payload",
+    "airframe": {
+      "serial": "AF-2024-0007",
+      "model": "VTOL-1",
+      "manufactureDate": "2024-11-20",
+      "deliveryDate": "2025-02-03",
+      "totalAirframeHours": 142.6,
+      "totalLandings": 231,
+      "mtowKg": 95.0,
+      "fuelType": "heavy fuel (JP-8 / Jet A-1)"
+    },
+    "components": {
+      "engine": {
+        "name": "Heavy-fuel engine",
+        "partNumber": "ENG-HF-01",
+        "serial": "ENG-2024-0107",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 500,
+        "lifeLimitCycles": 1200,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "ductedFan": {
+        "name": "Ducted fan assembly (rotor + duct + bearings)",
+        "partNumber": "FAN-DF-02",
+        "serial": "FAN-2024-0311",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 800,
+        "lifeLimitCycles": 2000,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "fuelPump": {
+        "name": "High-pressure fuel pump",
+        "partNumber": "FP-HP-11",
+        "serial": "FP-2025-0042",
+        "installDate": "2025-06-18",
+        "lifeLimitHours": 300,
+        "lifeLimitCycles": 900,
+        "hoursConsumed": 41.2,
+        "cyclesConsumed": 66
+      },
+      "servo1": {
+        "name": "Control servo 1",
+        "position": "elevon-left",
+        "partNumber": "SRV-CS-40",
+        "serial": "SRV-2024-1001",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 400,
+        "lifeLimitCycles": 1500,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "servo2": {
+        "name": "Control servo 2",
+        "position": "elevon-right",
+        "partNumber": "SRV-CS-40",
+        "serial": "SRV-2024-1002",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 400,
+        "lifeLimitCycles": 1500,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "servo3": {
+        "name": "Control servo 3",
+        "position": "thrust-vane-A",
+        "partNumber": "SRV-CS-40",
+        "serial": "SRV-2025-1140",
+        "installDate": "2025-07-29",
+        "lifeLimitHours": 400,
+        "lifeLimitCycles": 1500,
+        "hoursConsumed": 22.8,
+        "cyclesConsumed": 37
+      },
+      "servo4": {
+        "name": "Control servo 4",
+        "position": "thrust-vane-B",
+        "partNumber": "SRV-CS-40",
+        "serial": "SRV-2024-1004",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 400,
+        "lifeLimitCycles": 1500,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "avionics": {
+        "name": "Flight control / avionics unit",
+        "partNumber": "AVU-FC-03",
+        "serial": "AVU-2024-0219",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 3000,
+        "lifeLimitCycles": 6000,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "payloadGimbal": {
+        "name": "EO/IR payload gimbal",
+        "partNumber": "GMB-EOIR-05",
+        "serial": "GMB-2024-0088",
+        "installDate": "2025-02-03",
+        "lifeLimitHours": 1500,
+        "lifeLimitCycles": 3000,
+        "hoursConsumed": 142.6,
+        "cyclesConsumed": 231
+      },
+      "battery": {
+        "name": "Avionics / start battery pack",
+        "partNumber": "BAT-LI-6S",
+        "serial": "BAT-2025-0512",
+        "installDate": "2025-05-12",
+        "lifeLimitHours": 600,
+        "lifeLimitCycles": 400,
+        "hoursConsumed": 58.9,
+        "cyclesConsumed": 94
+      }
+    },
+    "maintenance": {
+      "lastInspectionDate": "2025-08-14",
+      "lastInspectionType": "100-hr",
+      "nextInspectionDueHours": 200
+    }
+  },
+  "features": {
+    "engine": {
+      "properties": {
+        "rpm": 0,
+        "egtC": 0,
+        "chtC": 0,
+        "fuelFlowLph": 0,
+        "throttlePct": 0,
+        "oilPressureKpa": 0,
+        "running": false,
+        "ts": null
+      }
+    },
+    "vibration": {
+      "properties": {
+        "rmsX": 0,
+        "rmsY": 0,
+        "rmsZ": 0,
+        "rmsTotal": 0,
+        "clipCount": 0,
+        "ts": null
+      }
+    },
+    "actuation": {
+      "properties": {
+        "servo1CurrentA": 0,
+        "servo2CurrentA": 0,
+        "servo3CurrentA": 0,
+        "servo4CurrentA": 0,
+        "servo1PositionDeg": 0,
+        "servo2PositionDeg": 0,
+        "servo3PositionDeg": 0,
+        "servo4PositionDeg": 0,
+        "ts": null
+      }
+    },
+    "power": {
+      "properties": {
+        "busVoltageV": 0,
+        "busCurrentA": 0,
+        "batteryVoltageV": 0,
+        "batteryCurrentA": 0,
+        "batteryRemainingPct": 0,
+        "batteryTempC": 0,
+        "ts": null
+      }
+    },
+    "navigation": {
+      "properties": {
+        "gpsFixType": 0,
+        "gpsSatellites": 0,
+        "gpsHdop": 0,
+        "insStatus": "unknown",
+        "insAligned": false,
+        "ts": null
+      }
+    },
+    "flightState": {
+      "properties": {
+        "sortieId": null,
+        "armed": false,
+        "flightMode": "unknown",
+        "vtolState": "unknown",
+        "lat": 0,
+        "lon": 0,
+        "altMslM": 0,
+        "altAglM": 0,
+        "airspeedMps": 0,
+        "groundspeedMps": 0,
+        "headingDeg": 0,
+        "flightTimeS": 0,
+        "ts": null
+      }
+    },
+    "lifeCounters": {
+      "properties": {
+        "airframe": { "hours": 142.6, "cycles": 231 },
+        "engine": { "hours": 142.6, "cycles": 231 },
+        "ductedFan": { "hours": 142.6, "cycles": 231 },
+        "fuelPump": { "hours": 41.2, "cycles": 66 },
+        "servo1": { "hours": 142.6, "cycles": 231 },
+        "servo2": { "hours": 142.6, "cycles": 231 },
+        "servo3": { "hours": 22.8, "cycles": 37 },
+        "servo4": { "hours": 142.6, "cycles": 231 },
+        "avionics": { "hours": 142.6, "cycles": 231 },
+        "payloadGimbal": { "hours": 142.6, "cycles": 231 },
+        "battery": { "hours": 58.9, "cycles": 94 },
+        "lastSortieId": null,
+        "updatedAt": null
+      }
+    },
+    "health": {
+      "properties": {
+        "aircraft": { "releaseStatus": "serviceable", "openWorkOrders": 0, "updatedAt": null },
+        "engine": { "healthScore": 100, "rulHours": 357.4, "alertLevel": "normal" },
+        "ductedFan": { "healthScore": 100, "rulHours": 657.4, "alertLevel": "normal" },
+        "fuelPump": { "healthScore": 100, "rulHours": 258.8, "alertLevel": "normal" },
+        "servo1": { "healthScore": 100, "rulHours": 257.4, "alertLevel": "normal" },
+        "servo2": { "healthScore": 100, "rulHours": 257.4, "alertLevel": "normal" },
+        "servo3": { "healthScore": 100, "rulHours": 377.2, "alertLevel": "normal" },
+        "servo4": { "healthScore": 100, "rulHours": 257.4, "alertLevel": "normal" },
+        "avionics": { "healthScore": 100, "rulHours": 2857.4, "alertLevel": "normal" },
+        "payloadGimbal": { "healthScore": 100, "rulHours": 1357.4, "alertLevel": "normal" },
+        "battery": { "healthScore": 100, "rulHours": 541.1, "alertLevel": "normal" }
+      }
+    }
+  }
+}
