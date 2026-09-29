@@ -130,7 +130,7 @@ def area_semantic_errors(data: Manifest, dir_name: str | None = None) -> list[st
         errs.append("bounds: min must be < max")
 
     def inside(lat: float, lon: float) -> bool:
-        return b["min_lat"] <= lat <= b["max_lat"] and b["min_lon"] <= lon <= b["max_lon"]
+        return bool(b["min_lat"] <= lat <= b["max_lat"] and b["min_lon"] <= lon <= b["max_lon"])
 
     o = data["origin"]
     if not inside(o["lat_deg"], o["lon_deg"]):
@@ -169,7 +169,9 @@ def rubric_semantic_errors(data: Manifest) -> list[str]:
         if len(limits) != len(bands) - 1:
             errs.append(f"metric {m['id']}: every band except the last needs a limit")
             continue
-        ordered = sorted(limits) if m["direction"] == "lower_is_better" else sorted(limits, reverse=True)
+        ordered = (
+            sorted(limits) if m["direction"] == "lower_is_better" else sorted(limits, reverse=True)
+        )
         if limits != ordered:
             errs.append(f"metric {m['id']}: band limits must run best→worst for {m['direction']}")
     return errs
@@ -196,7 +198,9 @@ def scenario_semantic_errors(data: Manifest, known: ManifestSet) -> list[str]:
             errs.append(f"vehicle {v['vehicle_id']}: pad '{pad}' not in area '{data['area_id']}'")
     for inj in data.get("injects", []):
         if inj["kind"] == "system_failure" and inj["code"] not in failure_codes:
-            errs.append(f"inject at {inj['at_s']}s: failure mode '{inj['code']}' not on any vehicle")
+            errs.append(
+                f"inject at {inj['at_s']}s: failure mode '{inj['code']}' not on any vehicle"
+            )
     return errs
 
 

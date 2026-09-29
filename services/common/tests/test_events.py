@@ -80,8 +80,11 @@ def _compile_protos(out: Path) -> Any:
     pytest.importorskip("grpc_tools")
     subprocess.run(
         [
-            sys.executable, "-m", "grpc_tools.protoc",
-            f"-I{root / 'schemas'}", f"--python_out={out}",
+            sys.executable,
+            "-m",
+            "grpc_tools.protoc",
+            f"-I{root / 'schemas'}",
+            f"--python_out={out}",
             *[str(p) for p in sorted((root / "schemas").glob("*.proto"))],
         ],
         check=True,

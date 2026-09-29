@@ -19,7 +19,6 @@ assert ROOT is not None
 SCHEMAS = ROOT / "schemas" / "json"
 
 
-
 def test_repo_manifests_are_all_valid() -> None:
     found, errors = discover(
         SCHEMAS,

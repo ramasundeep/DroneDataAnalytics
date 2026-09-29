@@ -49,7 +49,9 @@ async def _run_check(check: Check) -> CheckResult:
     return CheckResult(ok=True, latency_ms=(time.perf_counter() - start) * 1e3)
 
 
-def health_router(service: str, version: str, checks: Mapping[str, Check] | None = None) -> APIRouter:
+def health_router(
+    service: str, version: str, checks: Mapping[str, Check] | None = None
+) -> APIRouter:
     """Build the /health and /ready routes for a service."""
     router = APIRouter(tags=["health"])
     checks = dict(checks or {})

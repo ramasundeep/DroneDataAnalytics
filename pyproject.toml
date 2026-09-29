@@ -44,3 +44,4 @@ testpaths = [
   "terrain/services/tests",
   "tests",
 ]
+asyncio_mode = "auto"

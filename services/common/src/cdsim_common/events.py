@@ -74,9 +74,7 @@ class Stimulus(_Model):
     code: str = ""
     description: str = ""
     broadcast_id: str = Field(default="", alias="broadcastId")
-    expected_response_codes: list[str] = Field(
-        default_factory=list, alias="expectedResponseCodes"
-    )
+    expected_response_codes: list[str] = Field(default_factory=list, alias="expectedResponseCodes")
     params: dict[str, str] = Field(default_factory=dict)
 
 

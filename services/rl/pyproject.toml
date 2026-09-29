@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdsim-rl"
+version = "0.1.0"
+description = "CD Sim autonomy training: gym-style env over the SimControl gRPC API, precision-landing task."
+requires-python = ">=3.11,<3.12"
+# Phase 0 keeps this dependency-free. Phase 7 adds gymnasium, torch, onnx,
+# grpcio (see docs/08_AUTONOMY_TRAINING.md) as an optional [train] extra so
+# the services images stay small.
+dependencies = ["cdsim-common"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cdsim_rl = ["py.typed"]
