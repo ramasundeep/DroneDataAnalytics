@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdsim-terrain"
+version = "0.1.0"
+description = "CD Sim offline terrain twin services: tiles, mesh, elevation, weather/scenario store."
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "cdsim-common",
+  "fastapi==0.115.0",
+  "uvicorn[standard]==0.30.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cdsim_terrain = ["py.typed"]
