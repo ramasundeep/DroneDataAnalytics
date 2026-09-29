@@ -1,4 +1,6 @@
-# Drone Data Analytics
+# Flight Log Analyser (legacy tool)
+
+> Relocated from the repository root when the CD Sim monorepo was bootstrapped (see `docs/ADR/0001-monorepo-and-layout.md`). It is a standalone Streamlit utility, not part of the CD Sim runtime. Run it from this folder: `cd tools/flight-log-analyser && pip install -r requirements.txt && streamlit run app.py`.
 
 A Streamlit tool for parsing and visualizing drone flight logs. Built for ArduPilot, PX4, and generic MAVLink workflows.
 
