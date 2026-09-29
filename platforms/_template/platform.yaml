@@ -1,0 +1,62 @@
+# Template used by `make new-platform id=<id>`. The scaffolder replaces
+# __PLATFORM_ID__ and __PLATFORM_NAME__. Every value below is a placeholder:
+# fill it from CAD, bench tests and the vehicle's autopilot parameter dump.
+# Spec: docs/04_PLATFORM_PLUGIN_SPEC.md
+
+schema_version: 1
+
+identity:
+  id: __PLATFORM_ID__
+  name: __PLATFORM_NAME__
+  version: 0.1.0
+  status: placeholder
+  description: TODO describe the platform.
+
+class: multirotor   # multirotor | fixed_wing | vtol | rover | helicopter | weapon
+
+mass_properties:
+  mass_kg: 1.0
+  cg_m: [0.0, 0.0, 0.0]
+  inertia_kgm2: {ixx: 0.01, iyy: 0.01, izz: 0.02}
+
+propulsion:
+  actuators:
+    - {id: m1, type: motor, output_channel: 1, position_m: [0.1, 0.1, 0.0], direction: ccw, max_thrust_n: 8.0}
+    - {id: m2, type: motor, output_channel: 2, position_m: [-0.1, -0.1, 0.0], direction: ccw, max_thrust_n: 8.0}
+    - {id: m3, type: motor, output_channel: 3, position_m: [0.1, -0.1, 0.0], direction: cw, max_thrust_n: 8.0}
+    - {id: m4, type: motor, output_channel: 4, position_m: [-0.1, 0.1, 0.0], direction: cw, max_thrust_n: 8.0}
+
+aero:
+  model: linear_drag
+  drag_coefficients: [0.2, 0.2, 0.3]
+
+sensors:
+  - {id: imu0, type: imu, rate_hz: 400}
+  - {id: baro0, type: baro, rate_hz: 50}
+  - {id: gps0, type: gps, rate_hz: 10}
+
+autopilot:
+  type: ardupilot
+  vehicle: ArduCopter
+  sitl_model: JSON
+  param_file: ardupilot.parm
+
+failure_modes:
+  - id: gps_loss
+    name: GPS loss
+    effect: {type: sensor_dropout, target: gps0}
+
+maintenance:
+  parts:
+    - {id: battery, name: Flight battery, anchor: {offset_m: [0.0, 0.0, 0.0]}}
+  tools: []
+  procedures:
+    - id: preflight_inspection
+      name: Pre-flight inspection
+      steps:
+        - {id: s1, instruction: "TODO first step.", part_id: battery}
+
+meshes:
+  visual: {placeholder: true}
+
+ue_plugin: CDSimPlatform___PLATFORM_ID__

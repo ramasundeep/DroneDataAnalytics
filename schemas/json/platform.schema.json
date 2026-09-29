@@ -1,0 +1,258 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdsim.cdpl.local/schemas/platform.schema.json",
+  "title": "CD Sim platform definition (platforms/<id>/platform.yaml)",
+  "description": "Everything the core needs to load a vehicle by id. See docs/04_PLATFORM_PLUGIN_SPEC.md.",
+  "type": "object",
+  "required": ["schema_version", "identity", "class", "mass_properties", "propulsion", "sensors", "autopilot", "failure_modes", "maintenance", "meshes", "ue_plugin"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "identity": {
+      "type": "object",
+      "required": ["id", "name", "version", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "status": {"enum": ["placeholder", "engineering", "validated"], "description": "placeholder = geometry/mass not from real CAD; validated = matched to flight data"},
+        "description": {"type": "string"}
+      }
+    },
+    "class": {"enum": ["multirotor", "fixed_wing", "vtol", "rover", "helicopter", "weapon"]},
+    "mass_properties": {
+      "type": "object",
+      "required": ["mass_kg", "cg_m", "inertia_kgm2"],
+      "additionalProperties": false,
+      "properties": {
+        "mass_kg": {"type": "number", "exclusiveMinimum": 0},
+        "cg_m": {"$ref": "#/$defs/vec3", "description": "CG in body frame (FRD: x forward, y right, z down), metres from reference point"},
+        "inertia_kgm2": {
+          "type": "object",
+          "required": ["ixx", "iyy", "izz"],
+          "additionalProperties": false,
+          "properties": {
+            "ixx": {"type": "number", "exclusiveMinimum": 0},
+            "iyy": {"type": "number", "exclusiveMinimum": 0},
+            "izz": {"type": "number", "exclusiveMinimum": 0},
+            "ixy": {"type": "number", "default": 0},
+            "ixz": {"type": "number", "default": 0},
+            "iyz": {"type": "number", "default": 0}
+          }
+        }
+      }
+    },
+    "propulsion": {
+      "type": "object",
+      "required": ["actuators"],
+      "additionalProperties": false,
+      "properties": {
+        "actuators": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "type", "output_channel", "position_m"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"$ref": "#/$defs/id"},
+              "type": {"enum": ["motor", "servo", "engine", "wheel"]},
+              "output_channel": {"type": "integer", "minimum": 1, "maximum": 32, "description": "Autopilot servo output number (SERVOn)"},
+              "position_m": {"$ref": "#/$defs/vec3"},
+              "axis": {"$ref": "#/$defs/vec3", "description": "Thrust axis in body frame; default [0,0,-1] (up)"},
+              "direction": {"enum": ["cw", "ccw", "none"]},
+              "max_thrust_n": {"type": "number", "minimum": 0},
+              "max_torque_nm": {"type": "number", "minimum": 0},
+              "time_constant_s": {"type": "number", "minimum": 0},
+              "pwm_min_us": {"type": "integer", "default": 1000},
+              "pwm_max_us": {"type": "integer", "default": 2000},
+              "thrust_curve": {
+                "type": "array",
+                "description": "[[normalised_command, thrust_fraction], ...] monotonic, 0..1",
+                "items": {"type": "array", "prefixItems": [{"type": "number", "minimum": 0, "maximum": 1}, {"type": "number", "minimum": 0, "maximum": 1}], "minItems": 2, "maxItems": 2}
+              }
+            }
+          }
+        },
+        "battery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cells_series": {"type": "integer", "minimum": 1},
+            "capacity_mah": {"type": "number", "exclusiveMinimum": 0},
+            "nominal_voltage_v": {"type": "number", "exclusiveMinimum": 0},
+            "internal_resistance_ohm": {"type": "number", "minimum": 0}
+          }
+        }
+      }
+    },
+    "aero": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": {"enum": ["linear_drag", "coefficient_table"]},
+        "drag_coefficients": {"$ref": "#/$defs/vec3", "description": "Linear drag per body axis, N/(m/s)"},
+        "reference_area_m2": {"type": "number", "minimum": 0},
+        "coefficient_table": {"type": "string", "description": "Relative path to a CSV of aero coefficients (fixed-wing / VTOL)"}
+      }
+    },
+    "sensors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "rate_hz"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "type": {"enum": ["imu", "gps", "baro", "mag", "camera", "rangefinder", "optical_flow", "airspeed"]},
+          "rate_hz": {"type": "number", "exclusiveMinimum": 0},
+          "mount": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "position_m": {"$ref": "#/$defs/vec3"},
+              "rotation_deg": {"$ref": "#/$defs/vec3", "description": "roll, pitch, yaw relative to body"}
+            }
+          },
+          "noise": {"type": "object", "additionalProperties": {"type": "number"}},
+          "params": {"type": "object"}
+        }
+      }
+    },
+    "autopilot": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {"enum": ["ardupilot", "px4", "none"]},
+        "vehicle": {"type": "string", "description": "ArduPilot vehicle binary: ArduCopter, ArduPlane, Rover, ..."},
+        "sitl_model": {"type": "string", "description": "SITL --model argument; 'JSON' for the UE5 physics interface"},
+        "frame_class": {"type": "integer"},
+        "frame_type": {"type": "integer"},
+        "param_file": {"type": "string", "description": "Path relative to platform directory"}
+      }
+    },
+    "failure_modes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "effect"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "effect": {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": {"enum": ["actuator_scale", "sensor_dropout", "sensor_bias", "battery_sag", "comms_loss"]},
+              "target": {"type": "string", "description": "Actuator or sensor id affected"},
+              "value": {"type": "number"},
+              "ramp_s": {"type": "number", "minimum": 0}
+            }
+          }
+        }
+      }
+    },
+    "maintenance": {
+      "type": "object",
+      "required": ["parts", "tools", "procedures"],
+      "additionalProperties": false,
+      "properties": {
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "anchor"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"$ref": "#/$defs/id"},
+              "name": {"type": "string"},
+              "part_number": {"type": "string"},
+              "anchor": {"$ref": "#/$defs/anchor"}
+            }
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name"],
+            "additionalProperties": false,
+            "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"type": "string"}}
+          }
+        },
+        "procedures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "steps"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"$ref": "#/$defs/id"},
+              "name": {"type": "string"},
+              "description": {"type": "string"},
+              "ordered": {"type": "boolean", "default": true},
+              "steps": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["id", "instruction"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {"$ref": "#/$defs/id"},
+                    "instruction": {"type": "string"},
+                    "part_id": {"type": "string", "description": "Part whose anchor this step highlights"},
+                    "anchor": {"$ref": "#/$defs/anchor"},
+                    "tool_id": {"type": "string"},
+                    "expected_duration_s": {"type": "number", "minimum": 0},
+                    "critical": {"type": "boolean", "default": false}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "meshes": {
+      "type": "object",
+      "required": ["visual"],
+      "additionalProperties": false,
+      "properties": {
+        "visual": {"$ref": "#/$defs/meshref"},
+        "collision": {"$ref": "#/$defs/meshref"},
+        "lods": {"type": "array", "items": {"type": "object", "required": ["screen_size"], "properties": {"screen_size": {"type": "number"}, "reduction_pct": {"type": "number"}}, "additionalProperties": false}}
+      }
+    },
+    "ue_plugin": {"type": "string", "pattern": "^CDSimPlatform_[a-z0-9_]+$"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "vec3": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+    "anchor": {
+      "type": "object",
+      "description": "3D anchor for the maintainer module: a named socket on the UE mesh, or a body-frame offset.",
+      "additionalProperties": false,
+      "properties": {
+        "socket": {"type": "string"},
+        "offset_m": {"$ref": "#/$defs/vec3"}
+      },
+      "anyOf": [{"required": ["socket"]}, {"required": ["offset_m"]}]
+    },
+    "meshref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_cad": {"type": "string", "description": "STEP file path (LFS) — authoritative CAD"},
+        "fbx": {"type": "string", "description": "Exported FBX path (LFS)"},
+        "ue_asset": {"type": "string", "description": "UE object path, e.g. /CDSimPlatform_x/Meshes/SM_Body"},
+        "placeholder": {"type": "boolean", "default": false}
+      }
+    }
+  }
+}

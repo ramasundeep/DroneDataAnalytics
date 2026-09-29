@@ -1,0 +1,84 @@
+// CD Sim — simulation control plane.
+//
+// Used by the instructor console (via the API service), the scenario runner
+// and the RL harness to drive a running simulation. In Phase 0 this is the
+// contract only; the UE5 side implements it in Phase 1 (session control) and
+// Phase 7 (RL stepping). Transport: gRPC (docs/ADR/0012-rl-gym-env-grpc-pytorch-onnx.md).
+
+syntax = "proto3";
+
+package cdsim.v1;
+
+import "common.proto";
+import "events.proto";
+import "telemetry.proto";
+
+service SimControl {
+  // Start / stop / pause the simulation clock.
+  rpc SetClock(ClockCommand) returns (ClockStatus);
+  // Inject a stimulus (instructor inject, failure, target). The server stamps
+  // sim_time_us on delivery and echoes the stamped event.
+  rpc Inject(Event) returns (Event);
+  // Reset the world for a new episode (RL) or scenario restart.
+  rpc Reset(ResetRequest) returns (ResetResponse);
+  // Lock-step: advance the sim by N physics ticks and return the new state.
+  rpc Step(StepRequest) returns (StepResponse);
+  // Live state stream for monitoring (instructor console, recorder).
+  rpc StreamState(StreamRequest) returns (stream VehicleState);
+}
+
+message ClockCommand {
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_START = 1;
+    ACTION_PAUSE = 2;
+    ACTION_RESUME = 3;
+    ACTION_STOP = 4;
+  }
+  Action action = 1;
+  // Sim-rate multiplier; valid range 0.1 .. 10.0 (docs/05_SITL_INTEGRATION.md).
+  double sim_rate = 2;
+  string session_id = 3;
+}
+
+message ClockStatus {
+  Header header = 1;
+  bool running = 2;
+  double sim_rate = 3;
+}
+
+message ResetRequest {
+  string session_id = 1;
+  string scenario_id = 2;
+  uint64 random_seed = 3;
+  // Curriculum stage parameters (e.g. {"wind_mps": "4", "pad_motion": "linear"}).
+  map<string, string> params = 4;
+}
+
+message ResetResponse {
+  Header header = 1;
+  repeated VehicleState initial_state = 2;
+}
+
+message StepRequest {
+  string session_id = 1;
+  uint32 ticks = 2;
+  // Velocity setpoint (ENU, m/s) and yaw rate for guided-mode control.
+  string vehicle_id = 3;
+  Vec3 velocity_setpoint_mps = 4;
+  double yaw_rate_radps = 5;
+}
+
+message StepResponse {
+  Header header = 1;
+  VehicleState state = 2;
+  repeated Event events = 3;
+  // Object key of the downward camera frame for this step (RL observation).
+  string camera_frame_key = 4;
+}
+
+message StreamRequest {
+  string session_id = 1;
+  repeated string vehicle_ids = 2;  // empty = all
+  double rate_hz = 3;
+}

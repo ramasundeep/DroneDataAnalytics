@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdsim-assessment"
+version = "0.1.0"
+description = "CD Sim assessment engine: metrics, rubric scoring, reports."
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "cdsim-common[infra]",
+  "fastapi==0.115.0",
+  "uvicorn[standard]==0.30.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cdsim_assessment = ["py.typed"]

@@ -1,0 +1,93 @@
+# Precision landing (pilot, single seat) — rubric v1.
+# Metric definitions: docs/06_ASSESSMENT_ENGINE.md §"Metrics v1".
+# Band semantics: ordered best→worst; for lower_is_better a value falls in
+# the first band with value <= limit. The final band has no limit.
+# NOTE: thresholds are initial placeholders; calibrate against instructor
+# judgement and trainee data before operational use.
+
+schema_version: 1
+id: precision_landing_v1
+name: Precision landing — single seat
+version: 1.0.0
+applies_to: [pilot_single, pilot_fleet]   # autonomy gets its own rubric in Phase 7 (docs/08)
+pass_threshold: 0.70
+
+metrics:
+  - id: landing_radial
+    metric: landing_radial_error_m
+    weight: 0.30
+    direction: lower_is_better
+    aggregate: last
+    critical: true
+    bands:
+      - {label: excellent, limit: 0.25, score: 1.0}
+      - {label: good, limit: 0.50, score: 0.8}
+      - {label: acceptable, limit: 1.00, score: 0.6}
+      - {label: fail, score: 0.0, pass: false}
+
+  - id: touchdown_vspeed
+    metric: landing_vertical_speed_mps
+    weight: 0.20
+    direction: lower_is_better
+    aggregate: last
+    critical: true
+    bands:
+      - {label: soft, limit: 0.5, score: 1.0}
+      - {label: firm, limit: 1.0, score: 0.7}
+      - {label: hard, score: 0.0, pass: false}
+
+  - id: touchdown_attitude
+    metric: landing_attitude_deg
+    weight: 0.10
+    direction: lower_is_better
+    aggregate: last
+    bands:
+      - {label: level, limit: 5, score: 1.0}
+      - {label: tilted, limit: 10, score: 0.6}
+      - {label: unsafe, score: 0.0, pass: false}
+
+  - id: failure_reaction
+    metric: reaction_time_s
+    description: Stimulus (injected failure) to first meaningful control input.
+    weight: 0.15
+    direction: lower_is_better
+    aggregate: mean
+    params: {stimulus_kinds: [system_failure, instructor_inject]}
+    bands:
+      - {label: fast, limit: 1.0, score: 1.0}
+      - {label: adequate, limit: 2.5, score: 0.7}
+      - {label: slow, score: 0.2, pass: false}
+
+  - id: failure_decision
+    metric: decision_latency_s
+    description: Stimulus to the expected corrective action (e.g. mode.LAND or mode.RTL).
+    weight: 0.10
+    direction: lower_is_better
+    aggregate: mean
+    bands:
+      - {label: fast, limit: 3.0, score: 1.0}
+      - {label: adequate, limit: 6.0, score: 0.6}
+      - {label: slow, score: 0.0, pass: false}
+
+  - id: smoothness
+    metric: control_jerk_rms
+    description: RMS of the time derivative of normalised stick rate during final approach.
+    weight: 0.10
+    direction: lower_is_better
+    aggregate: mean
+    params: {window: final_approach}
+    bands:
+      - {label: smooth, limit: 5.0, score: 1.0}
+      - {label: busy, limit: 15.0, score: 0.6}
+      - {label: erratic, score: 0.2}
+
+  - id: comms
+    metric: comms_onset_s
+    description: Stimulus to trainee voice onset (calling the emergency).
+    weight: 0.05
+    direction: lower_is_better
+    aggregate: mean
+    bands:
+      - {label: prompt, limit: 3.0, score: 1.0}
+      - {label: late, limit: 8.0, score: 0.5}
+      - {label: none, score: 0.0}

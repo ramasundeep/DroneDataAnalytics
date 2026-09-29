@@ -1,0 +1,161 @@
+# CDPL Quad 01 — first CD Sim platform.
+#
+# STATUS: placeholder. Geometry, mass and inertia are engineering estimates
+# for a ~2.5 kg, 450 mm-class X quad, NOT derived from CDPL CAD. When real
+# CAD (STEP) and weighed mass properties arrive, follow
+# docs/04_PLATFORM_PLUGIN_SPEC.md §"Swapping in real CAD" and bump
+# identity.version + identity.status.
+#
+# Body frame: FRD (x forward, y right, z down), metres, origin at geometric
+# centre of the frame plate. Validated by schemas/json/platform.schema.json.
+
+schema_version: 1
+
+identity:
+  id: cdpl_quad_01
+  name: CDPL Quad 01 (placeholder airframe)
+  version: 0.1.0
+  status: placeholder
+  description: >
+    Four-rotor X-configuration multirotor used as the reference platform for
+    CD Sim development. Placeholder values until CAD and bench data arrive.
+
+class: multirotor
+
+mass_properties:
+  mass_kg: 2.5
+  cg_m: [0.0, 0.0, 0.02]
+  inertia_kgm2:
+    # Point-mass estimate: 4 x 0.12 kg motors at 0.225 m + 1.6 kg core box.
+    ixx: 0.0290
+    iyy: 0.0290
+    izz: 0.0520
+
+propulsion:
+  actuators:
+    # ArduPilot quad-X motor order: 1 front-right(CCW), 2 rear-left(CCW),
+    # 3 front-left(CW), 4 rear-right(CW).
+    - {id: m1, type: motor, output_channel: 1, position_m: [0.159, 0.159, 0.0], direction: ccw,
+       max_thrust_n: 15.0, max_torque_nm: 0.25, time_constant_s: 0.03,
+       thrust_curve: [[0.0, 0.0], [0.25, 0.08], [0.5, 0.30], [0.75, 0.62], [1.0, 1.0]]}
+    - {id: m2, type: motor, output_channel: 2, position_m: [-0.159, -0.159, 0.0], direction: ccw,
+       max_thrust_n: 15.0, max_torque_nm: 0.25, time_constant_s: 0.03,
+       thrust_curve: [[0.0, 0.0], [0.25, 0.08], [0.5, 0.30], [0.75, 0.62], [1.0, 1.0]]}
+    - {id: m3, type: motor, output_channel: 3, position_m: [0.159, -0.159, 0.0], direction: cw,
+       max_thrust_n: 15.0, max_torque_nm: 0.25, time_constant_s: 0.03,
+       thrust_curve: [[0.0, 0.0], [0.25, 0.08], [0.5, 0.30], [0.75, 0.62], [1.0, 1.0]]}
+    - {id: m4, type: motor, output_channel: 4, position_m: [-0.159, 0.159, 0.0], direction: cw,
+       max_thrust_n: 15.0, max_torque_nm: 0.25, time_constant_s: 0.03,
+       thrust_curve: [[0.0, 0.0], [0.25, 0.08], [0.5, 0.30], [0.75, 0.62], [1.0, 1.0]]}
+  battery:
+    cells_series: 4
+    capacity_mah: 5000
+    nominal_voltage_v: 14.8
+    internal_resistance_ohm: 0.02
+
+aero:
+  model: linear_drag
+  drag_coefficients: [0.25, 0.25, 0.40]
+  reference_area_m2: 0.06
+
+sensors:
+  - {id: imu0, type: imu, rate_hz: 400, mount: {position_m: [0, 0, 0], rotation_deg: [0, 0, 0]},
+     noise: {gyro_noise_radps: 0.0015, accel_noise_mps2: 0.02}}
+  - {id: baro0, type: baro, rate_hz: 50, noise: {pressure_noise_pa: 1.5}}
+  - {id: mag0, type: mag, rate_hz: 50, noise: {field_noise_gauss: 0.003}}
+  - {id: gps0, type: gps, rate_hz: 10, mount: {position_m: [0.0, 0.0, -0.08]},
+     noise: {horizontal_m: 0.5, vertical_m: 1.0}}
+  - {id: rng0, type: rangefinder, rate_hz: 20, mount: {position_m: [0.03, 0.0, 0.05], rotation_deg: [0, -90, 0]},
+     params: {max_range_m: 12.0}}
+  - {id: cam_down, type: camera, rate_hz: 30, mount: {position_m: [0.05, 0.0, 0.06], rotation_deg: [0, -90, 0]},
+     params: {width_px: 640, height_px: 480, hfov_deg: 78}}
+
+autopilot:
+  type: ardupilot
+  vehicle: ArduCopter
+  sitl_model: JSON
+  frame_class: 1   # FRAME_CLASS 1 = Quad
+  frame_type: 1    # FRAME_TYPE 1 = X
+  param_file: ardupilot.parm
+
+failure_modes:
+  - id: motor_m2_out
+    name: Motor 2 failure
+    description: Rear-left motor stops producing thrust.
+    effect: {type: actuator_scale, target: m2, value: 0.0, ramp_s: 0.2}
+  - id: motor_m1_degraded
+    name: Motor 1 degraded (60%)
+    effect: {type: actuator_scale, target: m1, value: 0.6, ramp_s: 1.0}
+  - id: gps_loss
+    name: GPS loss
+    effect: {type: sensor_dropout, target: gps0}
+  - id: mag_bias
+    name: Compass interference
+    effect: {type: sensor_bias, target: mag0, value: 0.15, ramp_s: 5.0}
+  - id: battery_sag
+    name: Battery sag
+    effect: {type: battery_sag, value: 0.8, ramp_s: 10.0}
+  - id: rc_link_loss
+    name: RC / datalink loss
+    effect: {type: comms_loss}
+
+maintenance:
+  parts:
+    - {id: prop_m1, name: Propeller (front-right), anchor: {socket: SOCKET_Prop_M1}}
+    - {id: prop_m2, name: Propeller (rear-left), anchor: {socket: SOCKET_Prop_M2}}
+    - {id: prop_m3, name: Propeller (front-left), anchor: {socket: SOCKET_Prop_M3}}
+    - {id: prop_m4, name: Propeller (rear-right), anchor: {socket: SOCKET_Prop_M4}}
+    - {id: motor_m2, name: Motor 2 (rear-left), anchor: {socket: SOCKET_Motor_M2}}
+    - {id: battery, name: Flight battery, anchor: {socket: SOCKET_Battery}}
+    - {id: gps_mast, name: GPS mast, anchor: {offset_m: [0.0, 0.0, -0.08]}}
+  tools:
+    - {id: hex_2_5, name: 2.5 mm hex driver}
+    - {id: prop_wrench, name: Propeller wrench}
+    - {id: multimeter, name: Digital multimeter}
+    - {id: threadlock, name: Medium-strength threadlocker}
+  procedures:
+    - id: preflight_inspection
+      name: Pre-flight inspection
+      description: Walk-around inspection before every sortie.
+      ordered: true
+      steps:
+        - {id: s1, instruction: "Confirm battery is disconnected.", part_id: battery, expected_duration_s: 10, critical: true}
+        - {id: s2, instruction: "Inspect all four propellers for chips and cracks.", part_id: prop_m1, expected_duration_s: 40}
+        - {id: s3, instruction: "Check each propeller is tight.", part_id: prop_m1, tool_id: prop_wrench, expected_duration_s: 30}
+        - {id: s4, instruction: "Check GPS mast is locked upright.", part_id: gps_mast, expected_duration_s: 10}
+        - {id: s5, instruction: "Measure battery voltage (>= 16.4 V for a full 4S pack).", part_id: battery, tool_id: multimeter, expected_duration_s: 30, critical: true}
+    - id: propeller_replacement
+      name: Propeller replacement (M2)
+      ordered: true
+      steps:
+        - {id: s1, instruction: "Disconnect flight battery.", part_id: battery, expected_duration_s: 10, critical: true}
+        - {id: s2, instruction: "Hold motor bell and remove prop nut.", part_id: prop_m2, tool_id: prop_wrench, expected_duration_s: 30}
+        - {id: s3, instruction: "Fit new CCW propeller, printed face up.", part_id: prop_m2, expected_duration_s: 20, critical: true}
+        - {id: s4, instruction: "Torque prop nut.", part_id: prop_m2, tool_id: prop_wrench, expected_duration_s: 20}
+    - id: motor_replacement
+      name: Motor replacement (M2)
+      ordered: true
+      steps:
+        - {id: s1, instruction: "Disconnect flight battery.", part_id: battery, expected_duration_s: 10, critical: true}
+        - {id: s2, instruction: "Remove propeller M2.", part_id: prop_m2, tool_id: prop_wrench, expected_duration_s: 30}
+        - {id: s3, instruction: "Unplug motor leads and note phase order.", part_id: motor_m2, expected_duration_s: 30}
+        - {id: s4, instruction: "Remove four motor mount screws.", part_id: motor_m2, tool_id: hex_2_5, expected_duration_s: 60}
+        - {id: s5, instruction: "Fit new motor; apply threadlocker to screws.", part_id: motor_m2, tool_id: threadlock, expected_duration_s: 90, critical: true}
+        - {id: s6, instruction: "Reconnect leads in noted order and verify direction on bench.", part_id: motor_m2, expected_duration_s: 60, critical: true}
+
+meshes:
+  visual:
+    placeholder: true
+    ue_asset: /CDSimPlatform_cdpl_quad_01/Meshes/SM_Quad01_Placeholder
+    # When CAD arrives:
+    # source_cad: platforms/cdpl_quad_01/meshes/cdpl_quad_01.step
+    # fbx: platforms/cdpl_quad_01/meshes/SM_Quad01.fbx
+  collision:
+    placeholder: true
+    ue_asset: /CDSimPlatform_cdpl_quad_01/Meshes/SM_Quad01_Placeholder
+  lods:
+    - {screen_size: 1.0, reduction_pct: 100}
+    - {screen_size: 0.3, reduction_pct: 50}
+    - {screen_size: 0.1, reduction_pct: 15}
+
+ue_plugin: CDSimPlatform_cdpl_quad_01

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdsim-api"
+version = "0.1.0"
+description = "CD Sim platform API: sessions, scenarios, trainees, scoring, replay (Phase 0: catalogue + health)."
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "cdsim-common",
+  "fastapi==0.115.0",
+  "uvicorn[standard]==0.30.6",
+  "httpx==0.27.2",
+  "psycopg[binary]==3.2.3",
+  "redis==5.1.1",
+  "minio==7.2.9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cdsim_api = ["py.typed"]

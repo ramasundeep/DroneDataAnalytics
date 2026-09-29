@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdsim-common"
+version = "0.1.0"
+description = "CD Sim shared library: unified sim clock, event models, config, health, manifest loading."
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "pydantic==2.9.2",
+  "pydantic-settings==2.5.2",
+  "PyYAML==6.0.2",
+  "jsonschema==4.23.0",
+  "fastapi==0.115.0",
+]
+
+[project.optional-dependencies]
+# Clients for the shared infrastructure; used by cdsim_common.deps.
+infra = [
+  "psycopg[binary]==3.2.3",
+  "redis==5.1.1",
+  "minio==7.2.9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cdsim_common = ["py.typed"]

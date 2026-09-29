@@ -1,0 +1,5 @@
+# ArduPilot parameters for __PLATFORM_ID__ (placeholder). Replace with a
+# parameter dump from the real vehicle.
+FRAME_CLASS 1
+FRAME_TYPE  1
+ARMING_CHECK 0

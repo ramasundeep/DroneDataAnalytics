@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cdsim-terrain-builder"
+version = "0.1.0"
+description = "CD Sim area package builder: fetch open data, tile, package (Phase 0: validate + plan)."
+requires-python = ">=3.11,<3.12"
+# Phase 2 adds GDAL/rasterio, rio-rgbify, and a 3D-tiles/mesh toolchain,
+# installed in a dedicated builder image (docs/03_DIGITAL_TERRAIN_TWINS.md).
+dependencies = ["cdsim-common"]
+
+[project.scripts]
+cdsim-area = "cdsim_terrain_builder.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cdsim_terrain_builder = ["py.typed"]

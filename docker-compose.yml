@@ -1,0 +1,280 @@
+# CD Sim — Docker Compose.
+#
+# Profiles (docs/02_ARCHITECTURE.md §"Deployment view"):
+#   core         timescaledb, redis, minio (+ minio-init), api, recorder, assessment
+#   terrain      tile / mesh / elevation / weather services for area packages
+#   lms          instructor console (React build served by nginx)
+#   sitl         ArduPilot SITL (one container per vehicle)             [opt-in]
+#   multiplayer  UE5 dedicated server for fleet mode         [Phase 5, opt-in]
+#   rl           autonomy training workers                   [Phase 7, opt-in]
+#
+# `make dev` = --profile core --profile terrain --profile lms, waits for health.
+# Everything runs offline once images are built/pulled. Every long-running
+# service has a health check; "healthy" means its /ready dependency checks pass.
+
+name: cdsim
+
+x-python-service: &python-service
+  restart: unless-stopped
+  environment: &python-env
+    CDSIM_DB_HOST: timescaledb
+    CDSIM_DB_PORT: "5432"
+    CDSIM_DB_USER: ${CDSIM_DB_USER:-cdsim}
+    CDSIM_DB_PASSWORD: ${CDSIM_DB_PASSWORD:-cdsim-dev-only}
+    CDSIM_DB_NAME: ${CDSIM_DB_NAME:-cdsim}
+    CDSIM_REDIS_URL: redis://redis:6379/0
+    CDSIM_MINIO_ENDPOINT: minio:9000
+    CDSIM_MINIO_ACCESS_KEY: ${CDSIM_MINIO_ROOT_USER:-cdsim}
+    CDSIM_MINIO_SECRET_KEY: ${CDSIM_MINIO_ROOT_PASSWORD:-cdsim-dev-only}
+  volumes: &data-volumes
+    - ./platforms:/opt/cdsim/data/platforms:ro
+    - ./terrain/areas:/opt/cdsim/data/areas:ro
+    - ./scenarios:/opt/cdsim/data/scenarios:ro
+    - ./services/assessment/rubrics:/opt/cdsim/data/rubrics:ro
+
+# Build options shared by every image we build. Both knobs are optional and
+# only matter when building behind a TLS-inspecting proxy
+# (docs/09_DEPLOYMENT_OFFLINE.md §"Building behind a proxy").
+x-build-opts: &build-secrets
+  secrets: [build_ca]
+  network: ${CDSIM_BUILD_NETWORK:-default}
+
+secrets:
+  build_ca:
+    # Optional CA for TLS-inspecting build proxies; /dev/null = none.
+    file: ${CDSIM_BUILD_CA:-/dev/null}
+
+services:
+  # ------------------------------------------------------------------ core
+  timescaledb:
+    profiles: [core]
+    image: timescale/timescaledb:2.16.1-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${CDSIM_DB_USER:-cdsim}
+      POSTGRES_PASSWORD: ${CDSIM_DB_PASSWORD:-cdsim-dev-only}
+      POSTGRES_DB: ${CDSIM_DB_NAME:-cdsim}
+      TIMESCALEDB_TELEMETRY: "off"   # offline-first: no phone-home
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+      - ./services/recorder/db:/docker-entrypoint-initdb.d:ro
+    ports: ["127.0.0.1:${CDSIM_DB_PORT:-5432}:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    profiles: [core]
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis-data:/data]
+    ports: ["127.0.0.1:${CDSIM_REDIS_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    profiles: [core]
+    image: ${CDSIM_MINIO_IMAGE:-minio/minio:RELEASE.2024-09-22T00-33-43Z}
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${CDSIM_MINIO_ROOT_USER:-cdsim}
+      MINIO_ROOT_PASSWORD: ${CDSIM_MINIO_ROOT_PASSWORD:-cdsim-dev-only}
+      MINIO_UPDATE: "off"             # offline-first: no update checks
+    volumes: [minio-data:/data]
+    ports:
+      - "127.0.0.1:${CDSIM_MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${CDSIM_MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio-init:
+    <<: *python-service
+    profiles: [core]
+    image: cdsim/api:dev
+    build: &api-build
+      context: .
+      dockerfile: services/Dockerfile
+      args: {PACKAGE: services/api}
+      <<: *build-secrets
+    restart: "no"
+    command: ["python", "-m", "cdsim_common.bootstrap"]
+    depends_on:
+      minio: {condition: service_healthy}
+
+  api:
+    <<: *python-service
+    profiles: [core]
+    image: cdsim/api:dev
+    build: *api-build
+    command: ["uvicorn", "--factory", "cdsim_api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      <<: *python-env
+      CDSIM_SERVICE_NAME: api
+      HEALTH_URL: http://127.0.0.1:8000/ready
+      CDSIM_SERVICE_URLS: >-
+        api=http://127.0.0.1:8000,recorder=http://recorder:8001,assessment=http://assessment:8002,terrain-tiles=http://tile-server:8101,terrain-mesh=http://mesh-server:8102,terrain-elevation=http://elevation-api:8103,terrain-weather=http://weather-store:8104
+    ports: ["127.0.0.1:${CDSIM_API_PORT:-8000}:8000"]
+    depends_on: &infra-deps
+      timescaledb: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      minio-init: {condition: service_completed_successfully}
+    healthcheck: &py-health
+      test: ["CMD", "python", "-c", "import urllib.request,os; urllib.request.urlopen(os.environ['HEALTH_URL'], timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  recorder:
+    <<: *python-service
+    profiles: [core]
+    image: cdsim/recorder:dev
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args: {PACKAGE: services/recorder}
+      <<: *build-secrets
+    command: ["uvicorn", "--factory", "cdsim_recorder.main:create_app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      <<: *python-env
+      CDSIM_SERVICE_NAME: recorder
+      HEALTH_URL: http://127.0.0.1:8001/ready
+    ports: ["127.0.0.1:${CDSIM_RECORDER_PORT:-8001}:8001"]
+    depends_on: *infra-deps
+    healthcheck: *py-health
+
+  assessment:
+    <<: *python-service
+    profiles: [core]
+    image: cdsim/assessment:dev
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args: {PACKAGE: services/assessment}
+      <<: *build-secrets
+    command: ["uvicorn", "--factory", "cdsim_assessment.main:create_app", "--host", "0.0.0.0", "--port", "8002"]
+    environment:
+      <<: *python-env
+      CDSIM_SERVICE_NAME: assessment
+      HEALTH_URL: http://127.0.0.1:8002/ready
+    ports: ["127.0.0.1:${CDSIM_ASSESSMENT_PORT:-8002}:8002"]
+    depends_on:
+      timescaledb: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck: *py-health
+
+  # --------------------------------------------------------------- terrain
+  tile-server: &terrain-service
+    profiles: [terrain]
+    image: cdsim/terrain:dev
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args: {PACKAGE: terrain/services}
+      <<: *build-secrets
+    restart: unless-stopped
+    volumes:
+      - ./terrain/areas:/opt/cdsim/data/areas:ro
+    command: ["uvicorn", "--factory", "cdsim_terrain.apps:tiles_app", "--host", "0.0.0.0", "--port", "8101"]
+    environment:
+      HEALTH_URL: http://127.0.0.1:8101/ready
+    ports: ["127.0.0.1:${CDSIM_TILES_PORT:-8101}:8101"]
+    healthcheck: *py-health
+
+  mesh-server:
+    <<: *terrain-service
+    command: ["uvicorn", "--factory", "cdsim_terrain.apps:mesh_app", "--host", "0.0.0.0", "--port", "8102"]
+    environment:
+      HEALTH_URL: http://127.0.0.1:8102/ready
+    ports: ["127.0.0.1:${CDSIM_MESH_PORT:-8102}:8102"]
+
+  elevation-api:
+    <<: *terrain-service
+    command: ["uvicorn", "--factory", "cdsim_terrain.apps:elevation_app", "--host", "0.0.0.0", "--port", "8103"]
+    environment:
+      HEALTH_URL: http://127.0.0.1:8103/ready
+    ports: ["127.0.0.1:${CDSIM_ELEVATION_PORT:-8103}:8103"]
+
+  weather-store:
+    <<: *terrain-service
+    command: ["uvicorn", "--factory", "cdsim_terrain.apps:weather_app", "--host", "0.0.0.0", "--port", "8104"]
+    environment:
+      HEALTH_URL: http://127.0.0.1:8104/ready
+    ports: ["127.0.0.1:${CDSIM_WEATHER_PORT:-8104}:8104"]
+
+  # ------------------------------------------------------------------- lms
+  instructor-console:
+    profiles: [lms]
+    image: cdsim/instructor-console:dev
+    build:
+      context: apps/instructor-console
+      <<: *build-secrets
+    restart: unless-stopped
+    ports: ["${CDSIM_CONSOLE_PORT:-8080}:80"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ------------------------------------------------------------------ sitl
+  # UNVERIFIED BUILD — see services/sitl/README.md. One service per vehicle;
+  # copy this block with INSTANCE=1,2,... for more vehicles.
+  sitl:
+    profiles: [sitl]
+    image: cdsim/sitl-arducopter:dev
+    build:
+      context: .
+      dockerfile: services/sitl/docker/Dockerfile
+    restart: unless-stopped
+    environment:
+      SIM_HOST: host.docker.internal
+      SIM_RATE: "1"
+      INSTANCE: "0"
+      HOME_LOC: "17.4000,78.5000,500,0"
+      PARAM_FILE: /platform/ardupilot.parm
+      GCS_TARGET: "host.docker.internal:${CDSIM_SITL_GCS_UDP_PORT:-14550}"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./platforms/cdpl_quad_01:/platform:ro
+    ports: ["${CDSIM_SITL_MAVLINK_PORT:-5760}:5760"]
+
+  # ----------------------------------------------------------- multiplayer
+  # Phase 5: UE5 dedicated server image produced by scripts/ue5/build.sh
+  # (CDSimServer target). Not available yet; the service is declared so the
+  # topology is visible. See docs/07_TRAINING_MODES.md §"Fleet mode".
+  fleet-server:
+    profiles: [multiplayer]
+    image: cdsim/fleet-server:dev
+    restart: unless-stopped
+    ports: ["7777:7777/udp"]
+    command: ["/opt/cdsim/CDSimServer.sh", "-log", "-port=7777"]
+
+  # -------------------------------------------------------------------- rl
+  # Phase 7: headless training workers. Today the entry point exits with a
+  # "not implemented" message. See docs/08_AUTONOMY_TRAINING.md.
+  rl-worker:
+    profiles: [rl]
+    image: cdsim/rl:dev
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args: {PACKAGE: services/rl}
+      <<: *build-secrets
+    restart: "no"
+    command: ["python", "-m", "cdsim_rl"]
+
+volumes:
+  timescale-data:
+  redis-data:
+  minio-data:

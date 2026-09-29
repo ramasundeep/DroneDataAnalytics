@@ -1,0 +1,60 @@
+// CD Sim — session metadata and the on-disk session file layout.
+//
+// A "session" is one continuous run of the simulator: a single-seat
+// training sortie, a fleet exercise, a SITL test, an RL episode batch or a
+// maintainer procedure. A session file (see docs/06_ASSESSMENT_ENGINE.md
+// §"Session file") is a directory / tarball containing:
+//
+//   session.json          SessionManifest (this message, JSON-encoded)
+//   events.pb             length-delimited cdsim.v1.Event stream
+//   telemetry.pb          length-delimited cdsim.v1.VehicleState stream
+//   controls.pb           length-delimited cdsim.v1.ControlInput stream
+//   audio/<trainee>/*.opus  Opus chunks (+ index.pb of AudioChunk headers)
+//
+// Replay reads these, orders by (sim_time_us, seq) and re-emits them.
+
+syntax = "proto3";
+
+package cdsim.v1;
+
+enum SessionKind {
+  SESSION_KIND_UNSPECIFIED = 0;
+  SESSION_KIND_SITL_TEST = 1;
+  SESSION_KIND_AUTONOMY = 2;
+  SESSION_KIND_PILOT_SINGLE = 3;
+  SESSION_KIND_PILOT_FLEET = 4;
+  SESSION_KIND_MISSION_REHEARSAL = 5;
+  SESSION_KIND_MAINTAINER = 6;
+}
+
+message Participant {
+  string actor_id = 1;         // trainee id or "instructor"
+  string role = 2;             // "pilot", "observer", "instructor", "maintainer"
+  string vehicle_id = 3;       // empty for non-flying roles
+  string platform_id = 4;
+  bool audio_consent = 5;      // explicit consent captured before recording
+}
+
+message SessionManifest {
+  string session_id = 1;
+  SessionKind kind = 2;
+  string area_id = 3;          // terrain/areas/<id>
+  string area_version = 4;
+  string scenario_id = 5;
+  string rubric_id = 6;
+  repeated Participant participants = 7;
+  // Wall-clock of sim_time_us == 0 (Unix epoch µs). Reference only.
+  int64 start_wall_time_us = 8;
+  int64 end_sim_time_us = 9;
+  // Sim-rate scale used (1.0 = real time). Recorded for reproducibility.
+  double sim_rate = 10;
+  // Seed for every random source in the run; replay must reuse it.
+  uint64 random_seed = 11;
+  // Build identifiers so a replay can check it is using the same binaries.
+  string sim_build_id = 12;
+  string autopilot_build_id = 13;
+  // Audio retention in days (0 = delete at session close; -1 = keep).
+  int32 audio_retention_days = 14;
+  // Schema version of the recording files (bump on layout change).
+  uint32 format_version = 15;
+}

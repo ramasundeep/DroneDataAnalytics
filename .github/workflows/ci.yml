@@ -1,0 +1,57 @@
+# CI: runs exactly what a developer runs locally (make targets), so "green
+# locally" and "green in CI" mean the same thing. UE5 builds are a separate
+# manual workflow (ue5-build.yml); the full docker stack smoke test is
+# stack-smoke.yml.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: lint · typecheck · unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false   # no binary assets are needed for these checks
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            services/*/pyproject.toml
+            terrain/*/pyproject.toml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/instructor-console/package-lock.json
+
+      - name: make setup
+        run: make setup PYTHON=python
+
+      - name: make lint (ruff, eslint, prettier, schemas, compose config)
+        run: make lint
+
+      - name: make typecheck (mypy --strict, tsc)
+        run: make typecheck
+
+      - name: make test (pytest, vitest)
+        run: make test
+
+      - name: console production build
+        run: npm --prefix apps/instructor-console run build

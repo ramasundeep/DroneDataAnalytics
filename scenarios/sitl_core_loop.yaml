@@ -1,0 +1,21 @@
+# Phase 1 acceptance scenario: scripted takeoff → waypoint → land on the
+# flat test range, headless, deterministic.
+
+schema_version: 1
+id: sitl_core_loop
+name: SITL core loop (takeoff, waypoint, land)
+version: 1.0.0
+session_kind: sitl_test
+area_id: flat_test
+random_seed: 1
+sim_rate: 1.0
+
+vehicles:
+  - vehicle_id: v1
+    platform_id: cdpl_quad_01
+    spawn: {pad_id: pad_home}
+    mission_file: scenarios/missions/core_loop.waypoints
+
+end_conditions:
+  max_duration_s: 300
+  on_all_landed: true

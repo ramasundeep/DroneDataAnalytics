@@ -1,0 +1,151 @@
+// CD Sim — session event schema.
+//
+// Events are the discrete, meaningful things that happen in a session. The
+// assessment engine derives every temporal metric from these (plus the
+// continuous telemetry and control streams). Definitions of how each event
+// is used live in docs/06_ASSESSMENT_ENGINE.md.
+//
+// Four families:
+//   stimulus   — something the trainee should notice / react to
+//   response   — something the trainee did
+//   outcome    — a measurable result of what happened
+//   annotation — instructor free text
+//
+// Every event carries Header (sim_time_us, session_id, actor_id, source).
+
+syntax = "proto3";
+
+package cdsim.v1;
+
+import "common.proto";
+
+message Event {
+  Header header = 1;
+  // UUID of this event, so responses/annotations can reference it.
+  string event_id = 2;
+  // Optional: the stimulus this event relates to (set on responses and
+  // outcomes when the producer knows the link; otherwise the assessment
+  // engine infers it by time window).
+  string related_event_id = 3;
+
+  oneof payload {
+    Stimulus stimulus = 10;
+    Response response = 11;
+    Outcome outcome = 12;
+    Annotation annotation = 13;
+  }
+}
+
+// ------------------------------------------------------------------ stimulus
+
+message Stimulus {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_INSTRUCTOR_INJECT = 1;
+    KIND_SYSTEM_FAILURE = 2;
+    KIND_TARGET_APPEARANCE = 3;
+    KIND_ALARM = 4;
+  }
+  Kind kind = 1;
+  // Machine-readable code, e.g. "motor_failure.m2", "gps_loss", "wind_gust".
+  // For system failures this is a failure-mode id from platform.yaml.
+  string code = 2;
+  // Human-readable description shown in the console and in reports.
+  string description = 3;
+  // Fleet mode: a shared stimulus has one broadcast_id delivered to every
+  // trainee at the same sim_time_us, enabling comparative reaction analysis.
+  string broadcast_id = 4;
+  // Codes of responses that count as "correct" for decision-latency scoring.
+  repeated string expected_response_codes = 5;
+  // Free-form parameters (e.g. {"severity": "0.5"}).
+  map<string, string> params = 6;
+}
+
+// ------------------------------------------------------------------ response
+
+message Response {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_CONTROL_INPUT = 1;   // first meaningful stick/throttle deflection
+    KIND_MODE_CHANGE = 2;     // autopilot flight-mode change
+    KIND_VOICE_COMMAND = 3;   // voice activity / recognised phrase
+    KIND_MENU_ACTION = 4;     // UI / checklist / tool-selection action
+  }
+  Kind kind = 1;
+  // e.g. "mode.RTL", "mode.LAND", "menu.arm", "voice.onset", "stick.pitch"
+  string code = 2;
+  string description = 3;
+  // For control inputs: normalised magnitude [0,1] of the deflection that
+  // crossed the "meaningful" threshold.
+  double magnitude = 4;
+  map<string, string> params = 5;
+}
+
+// ------------------------------------------------------------------ outcome
+
+message Outcome {
+  oneof detail {
+    LandingTouchdown landing_touchdown = 1;
+    Collision collision = 2;
+    GeofenceBreach geofence_breach = 3;
+    ProcedureStep procedure_step = 4;
+  }
+}
+
+message LandingTouchdown {
+  // Named pad from area.yaml (landing_pads[].id), empty if off-pad.
+  string pad_id = 1;
+  // Horizontal distance from pad centre, metres.
+  double radial_error_m = 2;
+  // Position error in pad-local ENU frame, metres.
+  Vec3 position_error_m = 3;
+  // Velocity at touchdown in local ENU, m/s. z < 0 is descending.
+  Vec3 velocity_mps = 4;
+  // Attitude at touchdown (degrees).
+  double roll_deg = 5;
+  double pitch_deg = 6;
+  double yaw_error_deg = 7;
+}
+
+message Collision {
+  string other_object_id = 1;
+  double impact_speed_mps = 2;
+  GeoPoint location = 3;
+}
+
+message GeofenceBreach {
+  // No-fly volume id from area.yaml (no_fly_volumes[].id) or scenario fence.
+  string volume_id = 1;
+  GeoPoint location = 2;
+  bool entered = 3;  // true = entered forbidden volume, false = left it
+}
+
+message ProcedureStep {
+  // Procedure id and step id from platform.yaml maintenance.procedures.
+  string procedure_id = 1;
+  string step_id = 2;
+  enum Result {
+    RESULT_UNSPECIFIED = 0;
+    RESULT_STARTED = 1;
+    RESULT_COMPLETED = 2;
+    RESULT_FAILED = 3;
+    RESULT_SKIPPED = 4;
+  }
+  Result result = 3;
+  // Tool the trainee selected, if the step requires one.
+  string tool_id = 4;
+  string failure_reason = 5;
+}
+
+// ------------------------------------------------------------------ annotation
+
+message Annotation {
+  string text = 1;
+  // Optional tags, e.g. "good", "unsafe", "debrief".
+  repeated string tags = 2;
+}
+
+// A batch of events, the unit the recorder ingests over the wire.
+message EventBatch {
+  repeated Event events = 1;
+}

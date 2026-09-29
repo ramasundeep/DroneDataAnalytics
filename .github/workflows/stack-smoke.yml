@@ -1,0 +1,36 @@
+# Full stack smoke test: builds every Phase-0 image, runs `make dev` (core +
+# terrain + lms), then the integration tests. Manual + weekly rather than on
+# every PR because it pulls and builds several images (~5-10 min).
+name: stack-smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"   # Mondays 03:17 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: make setup PYTHON=python
+      - name: make dev (build, start, wait healthy, smoke)
+        run: make dev
+      - name: integration tests
+        run: make integration
+      - name: logs on failure
+        if: failure()
+        run: docker compose --profile '*' logs --no-color --tail=200
+      - name: tear down
+        if: always()
+        run: docker compose --profile '*' down -v

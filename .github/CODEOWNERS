@@ -1,0 +1,10 @@
+# Code owners. Replace the placeholder team handles below with real GitHub
+# teams once the simulation-engineering team is set up; until then GitHub
+# ignores entries for teams that do not exist.
+#
+# *                       @cdpl/sim-leads
+# /sim/                   @cdpl/sim-ue5
+# /services/ /terrain/    @cdpl/sim-platform
+# /apps/                  @cdpl/sim-frontend
+# /schemas/               @cdpl/sim-leads
+# /docs/ADR/              @cdpl/sim-leads

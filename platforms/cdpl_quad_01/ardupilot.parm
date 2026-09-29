@@ -1,0 +1,39 @@
+# ArduCopter parameters for cdpl_quad_01 under SITL with the JSON physics
+# backend. Loaded by services/sitl (see docs/05_SITL_INTEGRATION.md).
+# PLACEHOLDER tuning: defaults suitable for a ~2.5 kg 450-class quad in sim.
+# Replace with the parameter dump from the real vehicle once available.
+FRAME_CLASS     1
+FRAME_TYPE      1
+# Motor / ESC
+MOT_PWM_MIN     1000
+MOT_PWM_MAX     2000
+MOT_SPIN_ARM    0.10
+MOT_SPIN_MIN    0.15
+MOT_THST_EXPO   0.65
+MOT_THST_HOVER  0.35
+# Battery (4S)
+BATT_MONITOR    4
+BATT_CAPACITY   5000
+BATT_LOW_VOLT   14.0
+BATT_CRT_VOLT   13.2
+# Failsafes (exercise these in training scenarios)
+FS_THR_ENABLE   1
+FS_GCS_ENABLE   1
+BATT_FS_LOW_ACT 2
+BATT_FS_CRT_ACT 1
+# Rangefinder (downward, used by precision landing)
+RNGFND1_TYPE    100
+RNGFND1_ORIENT  25
+RNGFND1_MAX_CM  1200
+# Precision landing (companion computer / sim target feed)
+PLND_ENABLED    1
+PLND_TYPE       1
+# Geofence
+FENCE_ENABLE    1
+FENCE_TYPE      7
+FENCE_ALT_MAX   120
+FENCE_RADIUS    500
+# Allow guided-mode velocity control (RL / scripted tests)
+GUID_OPTIONS    0
+# SITL: no arming checks for the placeholder vehicle's missing hardware
+ARMING_CHECK    0

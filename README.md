@@ -1,149 +1,95 @@
-# Drone Data Analytics
+# CD Sim
 
-A Streamlit tool for parsing and visualizing drone flight logs. Built for ArduPilot, PX4, and generic MAVLink workflows.
+**Chakravyuha Dynamics Private Limited (CDPL) — mission-rehearsal, training and simulation platform.**
 
-## Features
+> **Status: Phase 0 (skeleton) — under build.** This repository contains the
+> foundations of CD Sim: contracts, services, tooling, documentation and an
+> unverified Unreal Engine 5 project skeleton. Nothing in it is fielded or
+> validated yet. RAVEN is CDPL's only delivered programme. See
+> [docs/10_ROADMAP.md](docs/10_ROADMAP.md) for what exists and what comes next.
 
-- **Smart file selector** — validates extension, size, and emptiness before parsing. Tells you exactly why a file was rejected.
-- **Multi-format parser**
-  - `.tlog` — MAVLink telemetry logs (ground-station recordings)
-  - `.bin` — ArduPilot DataFlash binary logs (onboard SD)
-  - `.log` — ArduPilot text logs
-  - `.tlv` — Generic Type-Length-Value byte streams
-- **Interactive Plotly time-series** — throttle, airspeed, groundspeed, attitude, altitude, battery
-- **Folium flight map** — GPS path colored by altitude, start/end markers, three map styles
-- **Raw data inspector** with CSV export for every parsed message type
-- **Per-tab error boundaries** — a broken chart never takes down the whole app
-- **Memory caps** on huge files (2M messages, 500K TLV records) so the app stays responsive
+CD Sim is an **offline-first, platform-agnostic** simulation platform built on
+**Unreal Engine 5**. One core — world, physics, vehicle and assessment layers —
+serves five use cases:
 
----
+1. **SITL testing** — unmodified ArduPilot SITL (later PX4) flying against the CD Sim world.
+2. **Autonomy training** — datasets, scenario sweeps and reinforcement learning (first task: precision landing), with ONNX policy export.
+3. **Pilot / operator training** — single-seat and networked fleet training, desktop and VR, with an instructor station.
+4. **Mission rehearsal** — rehearse a task on a digital terrain twin of the real area.
+5. **Maintainer training (Fleet Focus)** — Explore / Rehearse / Improve on the airframe's digital twin.
 
-## Windows setup — full walkthrough
+Every session is recorded on a single simulation clock and scored by the
+**assessment engine** — that is what makes CD Sim a training system rather than
+a game. Everything runs in Docker on a laptop, lab server or field box with **no
+internet at runtime**.
 
-### 1. Install Python 3.10 or newer
+## 5-minute quickstart
 
-Download from <https://www.python.org/downloads/windows/>.
+Prerequisites (details in [docs/ONBOARDING.md](docs/ONBOARDING.md)): Linux or
+WSL2, Docker Engine with Compose v2, Python 3.11, Node.js 22, `make`, Git LFS.
 
-When the installer runs, **check the box "Add python.exe to PATH"** before clicking Install. This is the single most common cause of setup failures.
-
-Verify after install (open a new PowerShell or Command Prompt):
-
-```powershell
-python --version
+```bash
+git clone <this repo> cd-sim && cd cd-sim
+make setup      # venv + Python/Node deps + git-lfs + .env
+make dev        # build and start core + terrain + lms services, wait until healthy, smoke-test
 ```
 
-You should see `Python 3.10.x` or higher.
+Then open:
 
-### 2. Get the project files
+| What | URL |
+|---|---|
+| Instructor console | <http://localhost:8080> |
+| API spec (OpenAPI JSON) | <http://localhost:8000/openapi.json> |
+| Recorder / assessment specs | <http://localhost:8001/openapi.json>, <http://localhost:8002/openapi.json> |
+| MinIO console | <http://localhost:9001> (credentials in `.env`) |
 
-Either clone the repo or download the seven files (`app.py`, `parsers.py`, `visualizations.py`, `utils.py`, `requirements.txt`, `run.bat`, `README.md`) into one folder, for example `C:\Users\you\drone_analytics\`.
-
-### 3. Run it
-
-Double-click **`run.bat`**. On the first run it will:
-
-1. Check your Python version
-2. Create a virtual environment in `.venv\`
-3. Install all dependencies from `requirements.txt`
-4. Launch Streamlit and open <http://localhost:8501> in your browser
-
-Subsequent runs skip the install step and start in a few seconds.
-
-### Manual setup (if you prefer)
-
-```powershell
-cd C:\Users\you\drone_analytics
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-streamlit run app.py
+```bash
+make test       # unit tests (Python + console)
+make status     # container health
+make down       # stop everything (volumes kept)
+make help       # every target
 ```
 
-To stop the app, press **Ctrl+C** in the terminal window.
+The Unreal Engine 5.4 client is built separately on a machine with the engine
+installed — see [docs/BUILDING_UE5.md](docs/BUILDING_UE5.md).
 
----
+## Repository map
 
-## Project layout
+| Path | What |
+|---|---|
+| `docs/` | Vision, architecture, specs, roadmap, ADRs, onboarding — **start here** |
+| `schemas/` | Protobuf + JSON Schema contracts shared by every component |
+| `sim/` | Unreal Engine 5.4 C++ project (UNVERIFIED BUILD) and per-platform plugins |
+| `platforms/` | Platform definitions (`platform.yaml`, autopilot params, mesh refs) |
+| `terrain/` | Area package builder, offline terrain services, area manifests |
+| `services/` | Python services: `api`, `recorder`, `assessment`, `sitl`, `rl`, shared `common` |
+| `apps/instructor-console/` | React + TypeScript instructor / LMS web app |
+| `scenarios/` | Scenario definitions (YAML) |
+| `scripts/` | Developer helpers, scaffolders, smoke tests |
+| `tests/` | Cross-package and integration tests |
+| `tools/flight-log-analyser/` | Pre-existing standalone flight-log analyser (not part of the CD Sim runtime) |
 
-```
-drone_analytics/
-├── app.py              # Streamlit UI + tabs + error boundaries
-├── parsers.py          # MAVLink / ArduPilot / TLV parsing
-├── visualizations.py   # Plotly charts + Folium map helpers
-├── utils.py            # File validation, formatters
-├── requirements.txt    # Pinned dependency ranges
-├── run.bat             # Windows launcher
-├── .gitignore
-└── README.md
-```
+## Documentation
 
-## Common-schema dict produced by all parsers
+| Doc | Read it for |
+|---|---|
+| [ONBOARDING](docs/ONBOARDING.md) | Your first five days |
+| [01 Vision & use cases](docs/01_VISION_AND_USECASES.md) | What we are building and why |
+| [02 Architecture](docs/02_ARCHITECTURE.md) | C4 diagrams, data flow, unified time base |
+| [03 Digital terrain twins](docs/03_DIGITAL_TERRAIN_TWINS.md) | Area packages, build pipeline, offline serving |
+| [04 Platform plugin spec](docs/04_PLATFORM_PLUGIN_SPEC.md) | Adding a vehicle — the most important doc |
+| [05 SITL integration](docs/05_SITL_INTEGRATION.md) | ArduPilot SITL and the JSON physics interface |
+| [06 Assessment engine](docs/06_ASSESSMENT_ENGINE.md) | Events, metrics, rubrics, reports |
+| [07 Training modes](docs/07_TRAINING_MODES.md) | Single seat, fleet, VR, instructor, maintainer |
+| [08 Autonomy training](docs/08_AUTONOMY_TRAINING.md) | RL environment, precision landing, ONNX |
+| [09 Offline deployment](docs/09_DEPLOYMENT_OFFLINE.md) | Air-gap bundle, hardware, field boxes |
+| [10 Roadmap](docs/10_ROADMAP.md) | Phases 0–8 and acceptance criteria |
+| [ADRs](docs/ADR/README.md) | Every architecture decision and its reasoning |
+| [CLAUDE.md](CLAUDE.md), [CONTRIBUTING.md](CONTRIBUTING.md) | Conventions, definition of done, workflow |
 
-The parsers normalize every input format into the same dict-of-DataFrames so the UI layer doesn't care which format you uploaded:
+Build the docs site locally with `make docs` (output in `site/`).
 
-| Key         | Columns                                                              |
-| ----------- | -------------------------------------------------------------------- |
-| `position`  | `timestamp, lat, lon, alt, relative_alt, vx, vy, vz, heading`       |
-| `attitude`  | `timestamp, roll, pitch, yaw` (radians)                              |
-| `vfr_hud`   | `timestamp, throttle, airspeed, groundspeed, alt, climb`             |
-| `battery`   | `timestamp, voltage, current, remaining`                             |
-| `gps_raw`   | `timestamp, fix_type, satellites, lat, lon, alt`                     |
-| `heartbeat` | `timestamp, base_mode, custom_mode, system_status`                   |
-| `_meta`     | `format, total_messages, message_types, errors, capped`              |
+## Licence
 
-Every frame also gets `elapsed` (seconds from log start) and `datetime` when timestamps are present.
-
-ArduPilot DataFlash logs additionally expose the raw message tables (`GPS`, `ATT`, `CTUN`, `BAT`, `RCIN`, `RCOU`, etc.) under their native names in the Raw Data tab.
-
----
-
-## Troubleshooting
-
-**"python is not recognized as an internal or external command"**
-Python isn't on PATH. Reinstall and check the "Add Python to PATH" box, or add it manually via System Properties → Environment Variables.
-
-**`pip install pymavlink` fails to build on Windows**
-Install Microsoft C++ Build Tools from <https://visualstudio.microsoft.com/visual-cpp-build-tools/>, or force a prebuilt wheel:
-```powershell
-pip install --only-binary=:all: pymavlink
-```
-
-**Browser doesn't open automatically**
-Visit <http://localhost:8501> manually. If that's blocked, check your firewall rules — Streamlit binds to localhost only by default.
-
-**"streamlit-folium is not installed" appears in the Flight Map tab**
-Reinstall with `pip install streamlit-folium folium` inside the activated venv.
-
-**Empty Flight Map but the log has GPS**
-Some logs have all-zero coordinates when no fix was acquired. Open the Raw Data tab and check the `gps_raw` table — `fix_type` values of 0 or 1 mean no usable position.
-
-**Large `.bin` file is very slow**
-The parser is single-threaded by design (pymavlink limitation). For logs >100 MB, split with MissionPlanner's log extractor first, or rely on the built-in 2M-message cap (the app will warn you it kicked in).
-
-**Port 8501 already in use**
-Stop the other Streamlit process or launch on a different port:
-```powershell
-streamlit run app.py --server.port 8502
-```
-
-**Permission denied on temp file (rare, antivirus-related)**
-Add an exclusion for your `.venv\` folder in Windows Security → Virus & threat protection → Exclusions.
-
----
-
-## Roadmap
-
-- **Phase 2 — Video stream sync.** Load a companion MP4/MKV, sync to log timestamps, overlay HUD on video frames.
-- **Phase 3 — Anomaly detection.** Flag vibration spikes, EKF errors, GPS glitches, sudden current draws.
-- **Phase 4 — ULog (`.ulg`) support** for pure PX4 stacks (via `pyulog`).
-- **Phase 5 — Multi-log comparison.** Overlay two flights side-by-side to compare tuning changes.
-
-## Extending parsers
-
-To plug in a new format, add a method to `DroneLogParser` in `parsers.py`, route to it from `parse()`, and populate `self.data` with the common schema above. The UI auto-detects which tables are present and renders accordingly.
-
-```python
-elif self.ext == '.mylog':
-    self._parse_my_format()
-```
+Proprietary and confidential — © Chakravyuha Dynamics Private Limited. See
+[LICENSE](LICENSE). Third-party components: [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md).

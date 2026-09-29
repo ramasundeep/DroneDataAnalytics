@@ -1,0 +1,74 @@
+// CD Sim — continuous streams: vehicle state, control inputs, audio chunks,
+// video keyframes. All stamped on the unified sim clock via Header.
+//
+// Nominal rates (docs/02_ARCHITECTURE.md §"Data flow"):
+//   VehicleState   50 Hz recorded (physics runs at 400 Hz; recorder decimates)
+//   ControlInput   every change, capped at 100 Hz
+//   AudioChunk     20 ms Opus frames, batched into ~1 s chunks
+//   VideoKeyframe  optional, 1 Hz thumbnails for replay scrubbing
+
+syntax = "proto3";
+
+package cdsim.v1;
+
+import "common.proto";
+
+message VehicleState {
+  Header header = 1;
+  string vehicle_id = 2;
+  string platform_id = 3;          // platforms/<id>
+  GeoPoint position = 4;
+  // Local ENU position relative to the area origin (area.yaml origin), metres.
+  Vec3 position_local_m = 5;
+  Vec3 velocity_enu_mps = 6;
+  Quat attitude = 7;                // body-to-ENU
+  Vec3 angular_velocity_radps = 8;  // body frame
+  Vec3 accel_body_mps2 = 9;         // specific force, body frame
+  double altitude_agl_m = 10;
+  // Actuator outputs, normalised [0,1], index = motor/servo number.
+  repeated double actuator_outputs = 11;
+  string flight_mode = 12;
+  bool armed = 13;
+  double battery_voltage_v = 14;
+  double battery_remaining_frac = 15;
+  // Active failure-mode ids (platform.yaml failure_modes[].id).
+  repeated string active_failures = 16;
+}
+
+message ControlInput {
+  Header header = 1;
+  string vehicle_id = 2;
+  // Normalised stick axes in [-1, 1] (throttle in [0, 1]).
+  double roll = 3;
+  double pitch = 4;
+  double yaw = 5;
+  double throttle = 6;
+  // Switch / button states by name, e.g. {"mode_switch": 2}.
+  map<string, int32> switches = 7;
+  // Input device, e.g. "rc_transmitter", "gamepad", "vr_controller".
+  string device = 8;
+}
+
+message AudioChunk {
+  Header header = 1;            // sim_time_us = time of FIRST sample
+  string trainee_id = 2;
+  uint32 sample_rate_hz = 3;    // typically 48000
+  uint32 channels = 4;          // typically 1
+  uint32 duration_us = 5;
+  // Either inline Opus payload (small chunks, live path) or an object key
+  // in MinIO (recordings/<session>/audio/<trainee>/<seq>.opus).
+  oneof data {
+    bytes opus_payload = 6;
+    string object_key = 7;
+  }
+  // Mean RMS energy (dBFS) for cheap voice-activity detection.
+  float rms_dbfs = 8;
+}
+
+message VideoKeyframe {
+  Header header = 1;
+  string camera_id = 2;
+  string object_key = 3;        // MinIO key of the JPEG/WebP frame
+  uint32 width = 4;
+  uint32 height = 5;
+}
