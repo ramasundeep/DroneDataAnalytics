@@ -74,6 +74,6 @@ Concrete, observable triggers, not "if things change". For example:
 
 ## References
 
-- Related ADRs: [NNNN](NNNN-title.md)
+- Related ADRs: `[NNNN](NNNN-title.md)` (as a relative link)
 - Specs: `docs/0X_....md`
 - Code: `path/to/file`

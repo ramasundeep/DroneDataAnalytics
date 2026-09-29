@@ -48,12 +48,13 @@ Other rules:
 - `sim_time_us >= 0` is a `CHECK` constraint.
 - Full messages are stored as proto3-JSON in `body`; extracted columns exist
   only for filtering and indexing.
-- Event ingest must be idempotent on `event_id`. TimescaleDB requires the
-  partition column in every unique index, so the index is
-  `(event_id, recorded_at)` and the recorder inserts with `ON CONFLICT DO
-  NOTHING`. That de-duplicates within one batch/transaction, **but not a
-  retry arriving later** (different `recorded_at`). Closing this gap is a
-  Phase 1 recorder task (see Risks).
+- Event ingest is idempotent on `event_id`. TimescaleDB requires the
+  partition column in every unique index, and a retry arrives with a new
+  `recorded_at`, so a unique index cannot enforce this. Instead the recorder
+  takes a per-event advisory transaction lock and inserts with
+  `WHERE NOT EXISTS (… event_id = …)` (`services/recorder/src/cdsim_recorder/store.py`);
+  `events_event_id` is a plain index supporting that lookup. Verified by
+  `tests/test_integration_stack.py` against a running stack.
 - **Telemetry is disabled** (`TIMESCALEDB_TELEMETRY=off`) — offline-first,
   no phone-home.
 - Host port bound to `127.0.0.1` only.
@@ -92,7 +93,7 @@ Other rules:
 | Someone orders by `recorded_at` | SQL comments; review checklist; tests assert sim-time order with shuffled ingest |
 | Write volume at many vehicles × 50 Hz | Move to COPY-based batched ingest; compression policy; measure in Phase 5 |
 | Extension licence terms change | Only community features used; revisit trigger below |
-| Unique index includes `recorded_at` (hypertable requirement), so the DB cannot enforce global `event_id` uniqueness; a client retry in a later request can duplicate a row | Known Phase 0 gap: the in-memory store test covers duplicates, the Postgres path does not. Phase 1: check existence per `(session_id, event_id)` before insert, or de-duplicate on read |
+| Hypertable unique indexes must include `recorded_at`, so the DB alone cannot enforce global `event_id` uniqueness | Recorder enforces it (advisory lock + `NOT EXISTS`); integration test `test_retried_batch_is_not_stored_twice`. Revisit if ingest throughput suffers (per-row lock) |
 
 ## Alternatives considered
 

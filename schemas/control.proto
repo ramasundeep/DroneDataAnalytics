@@ -3,7 +3,7 @@
 // Used by the instructor console (via the API service), the scenario runner
 // and the RL harness to drive a running simulation. In Phase 0 this is the
 // contract only; the UE5 side implements it in Phase 1 (session control) and
-// Phase 7 (RL stepping). Transport: gRPC (docs/ADR/0012-rl-gym-env.md).
+// Phase 7 (RL stepping). Transport: gRPC (docs/ADR/0012-rl-gym-env-grpc-pytorch-onnx.md).
 
 syntax = "proto3";
 

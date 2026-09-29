@@ -4,7 +4,7 @@
 // the unified simulation clock (`sim_time_us`). See docs/02_ARCHITECTURE.md
 // §"Unified time base" and docs/ADR/0015-unified-sim-time-base.md.
 //
-// Compatibility rules (docs/ADR/0016-schema-contracts.md):
+// Compatibility rules (docs/ADR/0016-schema-contracts-protobuf-and-json-schema.md):
 //   * never renumber or reuse a field number; mark removed fields `reserved`
 //   * add new fields as optional with sensible zero defaults
 //   * breaking changes go into a new package version (cdsim.v2)

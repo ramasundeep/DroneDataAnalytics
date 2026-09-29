@@ -8,7 +8,7 @@ One image, four entrypoints (``uvicorn --factory cdsim_terrain.apps:<name>``):
 * ``weather_app``   — default weather + scenario store per area
 
 All read the areas directory read-only; all work fully offline. See
-docs/03_DIGITAL_TERRAIN_TWINS.md and docs/ADR/0017-own-terrain-services.md.
+docs/03_DIGITAL_TERRAIN_TWINS.md and docs/ADR/0017-own-lightweight-terrain-services.md.
 """
 
 from __future__ import annotations

@@ -18,7 +18,7 @@ the schema here is right and the component is wrong.
 Why two formats: protobuf for high-rate machine-to-machine streams (compact,
 typed, generates C++ for UE5 and Python for services); JSON Schema for
 human-edited YAML manifests (readable, validates with good error messages).
-See `docs/ADR/0016-schema-contracts.md`.
+See `docs/ADR/0016-schema-contracts-protobuf-and-json-schema.md`.
 
 ## Commands
 
