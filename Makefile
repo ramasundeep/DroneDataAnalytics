@@ -90,7 +90,7 @@ typecheck: ## mypy (strict) + tsc
 schemas: ## Validate JSON schemas + all manifests, compile protobuf
 	$(PY) scripts/validate_manifests.py
 	@mkdir -p schemas/gen/python
-	$(PY) -m grpc_tools.protoc -Ischemas --python_out=schemas/gen/python schemas/cdsim/v1/*.proto
+	$(PY) -m grpc_tools.protoc -Ischemas --python_out=schemas/gen/python schemas/*.proto
 
 docs: ## Build the documentation site (strict)
 	$(VENV)/bin/mkdocs build --strict
