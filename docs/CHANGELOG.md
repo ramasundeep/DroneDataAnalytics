@@ -41,7 +41,8 @@ All notable changes to CD Sim, newest first. One entry per roadmap phase
 - `make schemas`: all manifests valid; all `.proto` files compile.
 - `make dev`: every `core`, `terrain` and `lms` container reached *healthy*;
   `scripts/smoke_dev.sh` passed; an event round-trip through recorder →
-  TimescaleDB came back in sim-time order; integration tests passed.
+  TimescaleDB came back in sim-time order; integration tests passed
+  (including retry idempotency on the Postgres path).
 - `make docs`: MkDocs site builds with `--strict`.
 
 ### Not verified

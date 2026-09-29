@@ -133,10 +133,12 @@ sequenceDiagram
     PAWN->>PAWN: BuildSensors, StartPhysics, StartAutopilotBinding
 ```
 
-UE has no YAML parser, so the build scripts export each `platform.yaml` to
-`sim/Config/Platforms/<id>.json` (a 1:1 copy of the YAML tree) before the
-editor or a packaged build runs. The exporter is part of the UE5 build
-tooling under `scripts/ue5/` described in [BUILDING_UE5](BUILDING_UE5.md). The
+UE has no YAML parser, so `scripts/ue5/export_platform_json.py` exports
+each `platform.yaml` to `sim/Config/Platforms/<id>.json` (and each
+`area.yaml` to `sim/Config/Areas/<id>.json`) — a 1:1 copy of the YAML tree —
+before the editor or a packaged build runs. `scripts/ue5/build.sh` /
+`build.ps1` run it automatically; `--check` exits non-zero when the JSON is
+stale ([BUILDING_UE5 §4](BUILDING_UE5.md)). The output is gitignored. The
 YAML remains the only source of truth; never hand-edit the JSON.
 
 If a platform has **no** registered visuals subclass, the core still spawns it
@@ -523,7 +525,11 @@ void FCDSimPlatform_cdpl_hex_01Module::ShutdownModule()
 ```
 
 Convert anchor positions with `CDSimFrames::FrdToUeBodyCm`. Do not add
-physics, sensor or autopilot code to the plugin.
+physics, sensor or autopilot code to the plugin. The reference example is
+`UCDSimQuad01Visuals` in
+`sim/Plugins/CDSimPlatform_cdpl_quad_01/Source/CDSimPlatform_cdpl_quad_01/`,
+which builds the placeholder quad and its `SOCKET_Battery`,
+`SOCKET_Motor_*` and `SOCKET_Prop_*` anchors.
 
 **Step 7 — Fly it in SITL** (Phase 1 onward): point the `sitl` compose
 service's `platforms/<id>` volume at the new directory, launch the UE5 client
@@ -995,7 +1001,7 @@ optional schema fields (with `schema_version` policy per
   the visuals registry, failure application for `actuator_scale` and
   `sensor_dropout` (CD Sim side), and the `CDSimPlatform_cdpl_quad_01`
   plugin skeleton. No UE5 build has been run.
-- The YAML-to-JSON export step for UE5 (see [BUILDING_UE5](BUILDING_UE5.md)).
+- `scripts/ue5/export_platform_json.py` (YAML → JSON for UE5) has been run and linted per [BUILDING_UE5](BUILDING_UE5.md); the engine code that reads its output has not.
 
 **Not implemented (phase):**
 

@@ -326,8 +326,8 @@ For SITL tests and RL nobody needs to see the world:
 | Component | Headless mode |
 |---|---|
 | SITL | Always headless (a container). |
-| UE5, no cameras needed | Run the game with `-nullrhi -unattended -nosound` (no GPU rendering), or the `CDSimServer` target, which has no renderer. Physics, SITL binding and recording are unaffected because they run on the fixed clock, not on rendering. |
-| UE5, camera observations needed (RL) | `-RenderOffScreen` (renders on the GPU without a window). |
+| UE5, no cameras needed | `-game -nullrhi -unattended -nosound -log` (no GPU rendering), or the `CDSimServer` target with `-nullrhi -log`. Physics, SITL binding and recording are unaffected because they run on the fixed clock, not on rendering. |
+| UE5, camera observations needed (RL) | `-game -RenderOffscreen -unattended -nosound -log` (renders on the GPU without a window). |
 | Scenario | Driven by the scenario runner over `SimControl` gRPC (`schemas/control.proto`) and MAVLink SERIAL0 (Phase 1). |
 
 Phase 1 acceptance run (target, not yet possible):
@@ -335,14 +335,15 @@ Phase 1 acceptance run (target, not yet possible):
 ```bash
 docker compose --profile core --profile sitl up -d --build
 # UE5 (headless), flat test area, SITL on 9002, recorder on the local box:
-CDSim -Platform=cdpl_quad_01 -Area=flat_test -SitlPort=9002 \
-      -RecorderUrl=http://127.0.0.1:8001 -nullrhi -unattended
+<UE5 game binary> -game -Platform=cdpl_quad_01 -Area=flat_test -SitlPort=9002 \
+      -RecorderUrl=http://127.0.0.1:8001 -nullrhi -unattended -nosound -log
 # scenario runner uploads scenarios/missions/core_loop.waypoints over
 # MAVLink TCP 5760, arms, switches to AUTO, waits for landing, closes session
 ```
 
-The exact launcher and binary paths are defined in
-[BUILDING_UE5](BUILDING_UE5.md).
+Binary paths and the full flag list are in
+[BUILDING_UE5](BUILDING_UE5.md) (§6 "Flying it with ArduPilot SITL", §8
+"Headless and offscreen runs").
 
 ## 11. Failure injection path
 

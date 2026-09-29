@@ -363,7 +363,7 @@ start-up). A `make area-install id=<id> version=<v>` helper is planned.
 
 Today (`sim/Source/CDSim/World/CDSimAreaLoader.*`, uncompiled):
 `-Area=<id>` loads `sim/Config/Areas/<id>.json` (the manifest exported to
-JSON by the UE5 build scripts, since UE has no YAML parser), fixes the UE
+JSON by `scripts/ue5/export_platform_json.py`, since UE has no YAML parser), fixes the UE
 origin at `origin`, spawns a flat ground plane for `flat` areas and one
 `ACDSimLandingPadActor` per pad.
 

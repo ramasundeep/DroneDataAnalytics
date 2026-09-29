@@ -14,7 +14,7 @@
 
 This guide takes a Windows or Linux engineer from a clean machine to the
 editor, a PIE session on the flat test area, a dedicated server and headless
-runs. Project layout and class map: [`sim/README.md`](../sim/README.md).
+runs. Project layout and class map: `sim/README.md`.
 
 ---
 
