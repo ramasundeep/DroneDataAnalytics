@@ -1,0 +1,78 @@
+# Documentation site. Build: `make docs` (strict). Output: site/ (gitignored).
+# Everything renders offline: no external fonts, analytics or CDNs.
+site_name: CD Sim — Documentation
+site_description: Chakravyuha Dynamics CD Sim platform (proprietary)
+copyright: © Chakravyuha Dynamics Private Limited — proprietary and confidential
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  font: false            # no external font downloads (offline-first)
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - offline              # site works from file:// on an air-gapped box
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+validation:
+  links:
+    not_found: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Onboarding: ONBOARDING.md
+  - Origin prompt: 00_ORIGIN_PROMPT.md
+  - Specifications:
+      - Vision & use cases: 01_VISION_AND_USECASES.md
+      - Architecture: 02_ARCHITECTURE.md
+      - Digital terrain twins: 03_DIGITAL_TERRAIN_TWINS.md
+      - Platform plugin spec: 04_PLATFORM_PLUGIN_SPEC.md
+      - SITL integration: 05_SITL_INTEGRATION.md
+      - Assessment engine: 06_ASSESSMENT_ENGINE.md
+      - Training modes: 07_TRAINING_MODES.md
+      - Autonomy training: 08_AUTONOMY_TRAINING.md
+      - Offline deployment: 09_DEPLOYMENT_OFFLINE.md
+      - Roadmap: 10_ROADMAP.md
+  - Building UE5: BUILDING_UE5.md
+  - Architecture decisions:
+      - ADR/README.md
+      - ADR/0000-template.md
+      - ADR/0001-monorepo-and-layout.md
+      - ADR/0002-unreal-engine-5-4-and-git-lfs.md
+      - ADR/0003-ardupilot-sitl-json-physics.md
+      - ADR/0004-offline-terrain-twins-in-docker.md
+      - ADR/0005-python-fastapi-services.md
+      - ADR/0006-postgresql-timescaledb.md
+      - ADR/0007-minio-object-storage.md
+      - ADR/0008-redis-live-pubsub.md
+      - ADR/0009-react-typescript-console.md
+      - ADR/0010-ue5-replication-dedicated-server.md
+      - ADR/0011-openxr-vr-as-configuration.md
+      - ADR/0012-rl-gym-env-grpc-pytorch-onnx.md
+      - ADR/0013-audio-opus-whisper.md
+      - ADR/0014-compose-profiles-and-air-gap-bundle.md
+      - ADR/0015-unified-sim-time-base.md
+      - ADR/0016-schema-contracts-protobuf-and-json-schema.md
+      - ADR/0017-own-lightweight-terrain-services.md
+  - Changelog: CHANGELOG.md
+  - Glossary: GLOSSARY.md
+  - Third party: THIRD_PARTY.md
