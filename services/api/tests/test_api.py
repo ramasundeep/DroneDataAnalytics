@@ -62,3 +62,10 @@ async def test_probe_all_classifies() -> None:
     assert by["a"].status == "ok"
     assert by["b"].status == "degraded" and "postgres" in by["b"].detail
     assert by["c"].status == "unreachable"
+
+
+def test_no_cdn_backed_docs_pages(client: TestClient) -> None:
+    """Offline-first: Swagger/ReDoc pages would fetch JS from a CDN."""
+    assert client.get("/docs").status_code == 404
+    assert client.get("/redoc").status_code == 404
+    assert client.get("/openapi.json").json()["info"]["title"] == "CD Sim API"

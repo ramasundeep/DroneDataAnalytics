@@ -20,7 +20,7 @@ from cdsim_assessment import __version__
 from cdsim_assessment.scoring import RubricResult, score_rubric
 from cdsim_common.config import Settings, get_settings
 from cdsim_common.deps import postgres_check, redis_check
-from cdsim_common.health import Check, health_router
+from cdsim_common.health import OFFLINE_DOCS, Check, health_router
 from cdsim_common.manifests import (
     ManifestKind,
     discover,
@@ -57,7 +57,7 @@ def create_app(settings: Settings | None = None, with_infra_checks: bool = True)
     if with_infra_checks:
         checks |= {"postgres": postgres_check(settings), "redis": redis_check(settings)}
 
-    app = FastAPI(title="CD Sim Assessment", version=__version__)
+    app = FastAPI(title="CD Sim Assessment", version=__version__, **OFFLINE_DOCS)
     app.state.rubrics = found.rubrics
     app.state.settings = settings
     app.include_router(health_router(SERVICE, __version__, checks))

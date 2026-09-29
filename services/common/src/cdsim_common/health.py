@@ -75,3 +75,9 @@ def health_router(
         return report
 
     return router
+
+
+# FastAPI's default /docs and /redoc pages load their JavaScript from a public
+# CDN, which breaks offline-first. Every service disables them and exposes the
+# machine-readable spec at /openapi.json only (view it with any offline tool).
+OFFLINE_DOCS: dict[str, None] = {"docs_url": None, "redoc_url": None}
