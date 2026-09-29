@@ -1,0 +1,46 @@
+# Workspace-level tool configuration for all Python packages in CD Sim.
+# Each package (services/*, terrain/*) has its own pyproject.toml for
+# dependencies; linters, type checker and tests are configured here once.
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["tools/flight-log-analyser", "schemas/gen", "sim", "apps"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "cdsim_common", "cdsim_api", "cdsim_recorder", "cdsim_assessment",
+  "cdsim_rl", "cdsim_sitl_bridge", "cdsim_terrain_builder", "cdsim_terrain",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+exclude = ["tools/", "schemas/gen/", "sim/", "apps/", "build/"]
+
+[[tool.mypy.overrides]]
+module = ["minio.*", "jsonschema.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --import-mode=importlib"
+markers = [
+  "integration: needs running docker compose services (make dev)",
+]
+testpaths = [
+  "services/common/tests",
+  "services/api/tests",
+  "services/recorder/tests",
+  "services/assessment/tests",
+  "services/sitl/tests",
+  "services/rl/tests",
+  "terrain/builder/tests",
+  "terrain/services/tests",
+  "tests",
+]

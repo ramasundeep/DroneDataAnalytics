@@ -1,0 +1,17 @@
+# Unreal Engine coding standard approximation.
+# https://dev.epicgames.com/documentation/en-us/unreal-engine/epic-cplusplus-coding-standard-for-unreal-engine
+BasedOnStyle: Microsoft
+Language: Cpp
+Standard: c++20
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+ColumnLimit: 120
+BreakBeforeBraces: Allman
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Never
+AlwaysBreakTemplateDeclarations: Yes
+PointerAlignment: Left
+SortIncludes: false
+NamespaceIndentation: All

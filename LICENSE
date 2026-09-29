@@ -1,0 +1,24 @@
+PROPRIETARY AND CONFIDENTIAL
+
+Copyright (c) 2026 Chakravyuha Dynamics Private Limited, Hyderabad, India.
+All rights reserved.
+
+This repository ("CD Sim") and all files within it, including source code,
+documentation, schemas, data manifests, build scripts and assets, are the
+proprietary and confidential property of Chakravyuha Dynamics Private
+Limited ("CDPL").
+
+No part of this repository may be copied, reproduced, modified, published,
+distributed, sublicensed, transmitted, displayed, or used in any form or by
+any means, in whole or in part, without the prior written permission of
+CDPL, except by CDPL employees and contractors acting within the scope of a
+written agreement with CDPL.
+
+Third-party open-source components and open data used by this repository
+remain subject to their own licences. They are listed in
+docs/THIRD_PARTY.md. Nothing in this notice restricts rights granted by
+those licences.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL CDPL BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM THE USE OF THIS SOFTWARE BY UNAUTHORISED PARTIES.

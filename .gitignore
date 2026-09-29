@@ -1,0 +1,57 @@
+# ---- CD Sim root .gitignore ----
+# Secrets: never commit. Copy .env.example -> .env locally.
+.env
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+apps/*/dist/
+apps/*/coverage/
+
+# Docs build
+site/
+
+# Generated protobuf code (regenerate with `make schemas`)
+schemas/gen/
+
+# Build outputs / bundles
+build/
+dist/
+*.tar.zst
+*.tar.gz
+
+# Terrain build caches (area data lives in MinIO/LFS, never plain git)
+terrain/.cache/
+terrain/areas/*/build/
+terrain/areas/*/data/
+
+# Unreal Engine generated folders
+sim/Binaries/
+sim/Intermediate/
+sim/Saved/
+sim/DerivedDataCache/
+sim/.vs/
+sim/*.sln
+sim/Plugins/*/Binaries/
+sim/Plugins/*/Intermediate/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
