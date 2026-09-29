@@ -1,0 +1,93 @@
+# Hyderabad demo area — public open data only.
+#
+# A ~2.2 km x 2.2 km box of reservoir-edge farmland on the western outskirts
+# of Hyderabad, chosen because it has varied relief, open ground for pads,
+# and is away from airports and defence establishments.
+#
+# THIS IS A SIMULATION DEMO AREA, NOT FLIGHT CLEARANCE. Before any real
+# flight anywhere, check the national UAS airspace map and local rules.
+#
+# Phase 0: manifest only (validated). Phase 2: `cdsim-area package` fetches
+# the sources below, builds tiles/elevation/mesh and produces
+# hyd_demo_01-<version>.tar.zst. Spec: docs/03_DIGITAL_TERRAIN_TWINS.md
+
+schema_version: 1
+id: hyd_demo_01
+name: Hyderabad west demo area
+version: 0.1.0
+classification: public
+description: >
+  Open-data demo twin used for onboarding, UI development and the Phase 2
+  acceptance test (elevation correct in UE5, pads appear in-world).
+
+bounds: {min_lat: 17.3700, min_lon: 78.2900, max_lat: 17.3900, max_lon: 78.3110}
+origin: {lat_deg: 17.3800, lon_deg: 78.3005, alt_msl_m: 560.0}   # alt refined from DEM at build
+
+crs:
+  geographic: EPSG:4326
+  projected: EPSG:32644      # WGS 84 / UTM zone 44N
+  vertical_datum: EGM96
+
+sources:
+  - id: dem_cop30
+    kind: dem
+    name: Copernicus DEM GLO-30
+    licence: Copernicus DEM licence (free, attribution required)
+    resolution_m: 30
+  - id: dem_srtm
+    kind: dem
+    name: SRTM 1 arc-second (fallback)
+    licence: Public domain
+    resolution_m: 30
+  - id: img_s2
+    kind: imagery
+    name: Sentinel-2 L2A true-colour mosaic (cloud-free composite)
+    licence: Copernicus Sentinel data terms (free, attribution required)
+    resolution_m: 10
+  - id: osm
+    kind: vector
+    name: OpenStreetMap extract (roads, water, buildings)
+    licence: ODbL 1.0
+# Pin sha256 for every source once fetched (Phase 2), for reproducible builds.
+
+tile_layers:
+  - {id: imagery, kind: raster, source: img_s2, min_zoom: 10, max_zoom: 16, format: webp}
+  - {id: terrain, kind: terrain_rgb, source: dem_cop30, min_zoom: 8, max_zoom: 14, format: png}
+  - {id: osm, kind: vector, source: osm, min_zoom: 10, max_zoom: 16, format: pbf}
+
+elevation:
+  source: dem_cop30
+  resolution_m: 30
+
+mesh:
+  kind: heightmap_landscape
+  source: dem_cop30
+
+no_fly_volumes:
+  - id: reservoir_bund
+    name: Reservoir bund (demo restriction)
+    polygon:
+      - [17.3860, 78.2950]
+      - [17.3880, 78.2950]
+      - [17.3880, 78.2990]
+      - [17.3860, 78.2990]
+    floor_msl_m: 0
+    ceiling_msl_m: 2000
+
+landing_pads:
+  - {id: pad_alpha, name: Pad Alpha (home), position: {lat_deg: 17.3790, lon_deg: 78.3000}, heading_deg: 0, size_m: 2.0, marker: apriltag, marker_id: 0}
+  - {id: pad_bravo, name: Pad Bravo, position: {lat_deg: 17.3820, lon_deg: 78.3050}, heading_deg: 90, size_m: 2.0, marker: apriltag, marker_id: 1}
+  - {id: pad_charlie, name: Pad Charlie (small), position: {lat_deg: 17.3760, lon_deg: 78.3060}, heading_deg: 45, size_m: 1.0, marker: h}
+
+targets:
+  - {id: tgt_vehicle_1, name: Parked vehicle (training target), position: {lat_deg: 17.3840, lon_deg: 78.2980}, kind: vehicle}
+
+weather:
+  wind_speed_mps: 3.0
+  wind_from_deg: 250
+  gust_mps: 5.0
+  turbulence: light
+  temperature_c: 30
+  visibility_m: 8000
+  cloud_cover_frac: 0.2
+  time_of_day_local: "10:00"

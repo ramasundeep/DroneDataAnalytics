@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdsim.cdpl.local/schemas/rubric.schema.json",
+  "title": "CD Sim assessment rubric",
+  "description": "Maps derived metrics to scores. See docs/06_ASSESSMENT_ENGINE.md §Rubrics.",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "version", "pass_threshold", "metrics"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "name": {"type": "string"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "description": {"type": "string"},
+    "applies_to": {"type": "array", "items": {"enum": ["sitl_test", "autonomy", "pilot_single", "pilot_fleet", "mission_rehearsal", "maintainer"]}},
+    "pass_threshold": {"type": "number", "minimum": 0, "maximum": 1, "description": "Weighted score required to pass"},
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "metric", "weight", "direction", "bands"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "metric": {"enum": [
+            "reaction_time_s", "decision_latency_s", "hesitation_s", "control_jerk_rms",
+            "procedure_adherence", "procedure_step_time_s", "landing_radial_error_m",
+            "landing_vertical_speed_mps", "landing_attitude_deg", "recovery_time_s",
+            "comms_onset_s"
+          ]},
+          "description": {"type": "string"},
+          "weight": {"type": "number", "minimum": 0},
+          "direction": {"enum": ["lower_is_better", "higher_is_better"]},
+          "aggregate": {"enum": ["mean", "median", "max", "min", "last"], "default": "mean"},
+          "critical": {"type": "boolean", "default": false, "description": "If this metric lands in a fail band, the whole session fails regardless of total"},
+          "params": {"type": "object"},
+          "bands": {
+            "type": "array",
+            "minItems": 2,
+            "description": "Ordered best to worst. A value falls in the first band whose limit it satisfies; the last band has no limit.",
+            "items": {
+              "type": "object",
+              "required": ["label", "score"],
+              "additionalProperties": false,
+              "properties": {
+                "label": {"type": "string"},
+                "limit": {"type": "number", "description": "Upper bound (lower_is_better) or lower bound (higher_is_better)"},
+                "score": {"type": "number", "minimum": 0, "maximum": 1},
+                "pass": {"type": "boolean", "default": true}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

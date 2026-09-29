@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdsim.cdpl.local/schemas/area.schema.json",
+  "title": "CD Sim area package manifest (terrain/areas/<id>/area.yaml)",
+  "description": "A digital terrain twin of an area of operations. See docs/03_DIGITAL_TERRAIN_TWINS.md.",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "version", "bounds", "origin", "crs", "sources", "tile_layers", "elevation", "weather"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "name": {"type": "string"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "description": {"type": "string"},
+    "classification": {"enum": ["public", "restricted"], "default": "public", "description": "public = built only from open data"},
+    "bounds": {
+      "type": "object",
+      "required": ["min_lat", "min_lon", "max_lat", "max_lon"],
+      "additionalProperties": false,
+      "properties": {
+        "min_lat": {"type": "number", "minimum": -90, "maximum": 90},
+        "min_lon": {"type": "number", "minimum": -180, "maximum": 180},
+        "max_lat": {"type": "number", "minimum": -90, "maximum": 90},
+        "max_lon": {"type": "number", "minimum": -180, "maximum": 180}
+      }
+    },
+    "origin": {"$ref": "#/$defs/geopoint", "description": "Local ENU origin used by UE5 world coordinates and VehicleState.position_local_m"},
+    "crs": {
+      "type": "object",
+      "required": ["geographic", "projected"],
+      "additionalProperties": false,
+      "properties": {
+        "geographic": {"type": "string", "pattern": "^EPSG:\\d+$"},
+        "projected": {"type": "string", "pattern": "^EPSG:\\d+$"},
+        "vertical_datum": {"type": "string", "default": "EGM96"}
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "licence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "kind": {"enum": ["dem", "imagery", "vector", "photogrammetry", "flat"]},
+          "name": {"type": "string"},
+          "url": {"type": "string", "description": "Build-time fetch location. Never contacted at runtime."},
+          "licence": {"type": "string"},
+          "resolution_m": {"type": "number", "exclusiveMinimum": 0},
+          "sha256": {"type": "string", "description": "Pinned checksum of the fetched artefact for reproducible builds"}
+        }
+      }
+    },
+    "tile_layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "source", "min_zoom", "max_zoom"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "kind": {"enum": ["raster", "terrain_rgb", "vector"]},
+          "source": {"type": "string"},
+          "min_zoom": {"type": "integer", "minimum": 0, "maximum": 22},
+          "max_zoom": {"type": "integer", "minimum": 0, "maximum": 22},
+          "format": {"enum": ["png", "webp", "jpg", "pbf"]}
+        }
+      }
+    },
+    "elevation": {
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": {"type": "string"},
+        "resolution_m": {"type": "number", "exclusiveMinimum": 0},
+        "flat_elevation_m": {"type": "number", "description": "Used when source kind is 'flat'"}
+      }
+    },
+    "mesh": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["none", "3d_tiles", "heightmap_landscape"]},
+        "source": {"type": "string"},
+        "geometric_error_m": {"type": "number", "minimum": 0}
+      }
+    },
+    "no_fly_volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "polygon", "floor_msl_m", "ceiling_msl_m"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "name": {"type": "string"},
+          "polygon": {"type": "array", "minItems": 3, "items": {"type": "array", "prefixItems": [{"type": "number"}, {"type": "number"}], "minItems": 2, "maxItems": 2, "description": "[lat_deg, lon_deg]"}},
+          "floor_msl_m": {"type": "number"},
+          "ceiling_msl_m": {"type": "number"}
+        }
+      }
+    },
+    "landing_pads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "position", "size_m"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "name": {"type": "string"},
+          "position": {"$ref": "#/$defs/geopoint"},
+          "heading_deg": {"type": "number", "minimum": 0, "maximum": 360},
+          "size_m": {"type": "number", "exclusiveMinimum": 0},
+          "marker": {"enum": ["h", "apriltag", "aruco", "none"]},
+          "marker_id": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "position"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "name": {"type": "string"},
+          "position": {"$ref": "#/$defs/geopoint"},
+          "kind": {"type": "string"}
+        }
+      }
+    },
+    "weather": {
+      "type": "object",
+      "required": ["wind_speed_mps", "wind_from_deg"],
+      "additionalProperties": false,
+      "properties": {
+        "wind_speed_mps": {"type": "number", "minimum": 0},
+        "wind_from_deg": {"type": "number", "minimum": 0, "maximum": 360},
+        "gust_mps": {"type": "number", "minimum": 0},
+        "turbulence": {"enum": ["none", "light", "moderate", "severe"]},
+        "temperature_c": {"type": "number"},
+        "visibility_m": {"type": "number", "minimum": 0},
+        "cloud_cover_frac": {"type": "number", "minimum": 0, "maximum": 1},
+        "time_of_day_local": {"type": "string", "pattern": "^\\d{2}:\\d{2}$"}
+      }
+    }
+  },
+  "$defs": {
+    "geopoint": {
+      "type": "object",
+      "required": ["lat_deg", "lon_deg"],
+      "additionalProperties": false,
+      "properties": {
+        "lat_deg": {"type": "number", "minimum": -90, "maximum": 90},
+        "lon_deg": {"type": "number", "minimum": -180, "maximum": 180},
+        "alt_msl_m": {"type": "number"}
+      }
+    }
+  }
+}

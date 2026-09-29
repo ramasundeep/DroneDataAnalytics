@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cdsim.cdpl.local/schemas/scenario.schema.json",
+  "title": "CD Sim scenario",
+  "description": "A scripted exercise: where, with what, what happens when, how it ends and how it is scored. See docs/07_TRAINING_MODES.md.",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "version", "session_kind", "area_id", "vehicles", "end_conditions"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "name": {"type": "string"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "description": {"type": "string"},
+    "session_kind": {"enum": ["sitl_test", "autonomy", "pilot_single", "pilot_fleet", "mission_rehearsal", "maintainer"]},
+    "area_id": {"type": "string"},
+    "rubric_id": {"type": "string"},
+    "random_seed": {"type": "integer", "minimum": 0},
+    "sim_rate": {"type": "number", "minimum": 0.1, "maximum": 10},
+    "weather_override": {"type": "object"},
+    "vehicles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["vehicle_id", "platform_id", "spawn"],
+        "additionalProperties": false,
+        "properties": {
+          "vehicle_id": {"type": "string"},
+          "platform_id": {"type": "string"},
+          "spawn": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pad_id": {"type": "string"},
+              "lat_deg": {"type": "number"},
+              "lon_deg": {"type": "number"},
+              "alt_agl_m": {"type": "number", "default": 0},
+              "heading_deg": {"type": "number"}
+            },
+            "anyOf": [{"required": ["pad_id"]}, {"required": ["lat_deg", "lon_deg"]}]
+          },
+          "mission_file": {"type": "string", "description": "Optional QGC WPL mission for SITL tests"}
+        }
+      }
+    },
+    "injects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at_s", "kind", "code"],
+        "additionalProperties": false,
+        "properties": {
+          "at_s": {"type": "number", "minimum": 0, "description": "Sim seconds from session start"},
+          "kind": {"enum": ["instructor_inject", "system_failure", "target_appearance", "alarm"]},
+          "code": {"type": "string"},
+          "description": {"type": "string"},
+          "targets": {"type": "array", "items": {"type": "string"}, "description": "vehicle ids; empty = broadcast to all"},
+          "expected_response_codes": {"type": "array", "items": {"type": "string"}},
+          "params": {"type": "object"}
+        }
+      }
+    },
+    "end_conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_duration_s": {"type": "number", "exclusiveMinimum": 0},
+        "on_all_landed": {"type": "boolean"},
+        "on_collision": {"type": "boolean"}
+      }
+    }
+  }
+}

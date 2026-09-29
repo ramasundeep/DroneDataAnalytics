@@ -1,0 +1,34 @@
+# Example single-seat scenario: take off from Pad Alpha, fly to Pad Bravo,
+# a motor degrades en route, trainee must land precisely on Bravo.
+# Consumed by the scenario runner (Phase 4). Validated in Phase 0.
+
+schema_version: 1
+id: landing_motor_failure_01
+name: Precision landing with degraded motor
+version: 1.0.0
+description: >
+  Trainee transits Pad Alpha → Pad Bravo. At T+60 s motor 1 degrades to
+  60% thrust; the trainee should acknowledge on voice, stabilise and land on
+  Pad Bravo.
+session_kind: pilot_single
+area_id: hyd_demo_01
+rubric_id: precision_landing_v1
+random_seed: 42
+sim_rate: 1.0
+
+vehicles:
+  - vehicle_id: v1
+    platform_id: cdpl_quad_01
+    spawn: {pad_id: pad_alpha, heading_deg: 0}
+
+injects:
+  - at_s: 60
+    kind: system_failure
+    code: motor_m1_degraded
+    description: Motor 1 degraded to 60% thrust.
+    expected_response_codes: [mode.LAND, mode.ALT_HOLD, voice.onset]
+
+end_conditions:
+  max_duration_s: 600
+  on_all_landed: true
+  on_collision: true

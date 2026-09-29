@@ -1,0 +1,65 @@
+// CD Sim — shared message types.
+//
+// Every message that crosses a process boundary in CD Sim is stamped with
+// the unified simulation clock (`sim_time_us`). See docs/02_ARCHITECTURE.md
+// §"Unified time base" and docs/ADR/0015-unified-sim-time-base.md.
+//
+// Compatibility rules (docs/ADR/0016-schema-contracts.md):
+//   * never renumber or reuse a field number; mark removed fields `reserved`
+//   * add new fields as optional with sensible zero defaults
+//   * breaking changes go into a new package version (cdsim.v2)
+
+syntax = "proto3";
+
+package cdsim.v1;
+
+// Identifies where a message originated.
+enum Source {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_SIM_CLIENT = 1;         // UE5 client (trainee seat)
+  SOURCE_SIM_SERVER = 2;         // UE5 dedicated server (fleet mode)
+  SOURCE_AUTOPILOT = 3;          // ArduPilot SITL (via bridge)
+  SOURCE_INSTRUCTOR = 4;         // instructor console
+  SOURCE_ASSESSMENT = 5;         // derived by the assessment engine
+  SOURCE_SCENARIO = 6;           // scripted scenario runner
+  SOURCE_RL = 7;                 // RL / autonomy harness
+  SOURCE_AUDIO = 8;              // audio pipeline (voice activity, transcripts)
+}
+
+// Common envelope header carried by every recorded message.
+message Header {
+  // Monotonic simulation time in microseconds since session start.
+  // THE ordering key for everything in a session. Never derived from wall-clock.
+  int64 sim_time_us = 1;
+  // Wall-clock at the producer (Unix epoch, microseconds). Reference only.
+  int64 wall_time_us = 2;
+  // Session UUID (string form).
+  string session_id = 3;
+  // Who this refers to: trainee id, vehicle id, "instructor", "system".
+  string actor_id = 4;
+  Source source = 5;
+  // Producer-local monotonically increasing sequence number; lets the
+  // recorder detect drops and break ties at identical sim_time_us.
+  uint64 seq = 6;
+}
+
+message Vec3 {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+// Unit quaternion, Hamilton convention (w, x, y, z).
+message Quat {
+  double w = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+}
+
+// WGS-84 position. Altitude is metres above mean sea level (EGM96).
+message GeoPoint {
+  double lat_deg = 1;
+  double lon_deg = 2;
+  double alt_msl_m = 3;
+}

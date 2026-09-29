@@ -1,0 +1,32 @@
+# Maintainer (Fleet Focus) — procedure rehearsal rubric v1.
+# Thresholds are placeholders pending instructor calibration.
+
+schema_version: 1
+id: maintainer_procedure_v1
+name: Maintainer procedure rehearsal
+version: 1.0.0
+applies_to: [maintainer]
+pass_threshold: 0.75
+
+metrics:
+  - id: adherence
+    metric: procedure_adherence
+    description: Fraction of steps completed in the prescribed order with the correct tool.
+    weight: 0.6
+    direction: higher_is_better
+    critical: true
+    bands:
+      - {label: complete, limit: 1.0, score: 1.0}
+      - {label: minor_deviation, limit: 0.85, score: 0.7}
+      - {label: fail, score: 0.0, pass: false}
+
+  - id: step_time
+    metric: procedure_step_time_s
+    description: Mean ratio-adjusted step time vs expected_duration_s (1.0 = on time).
+    weight: 0.4
+    direction: lower_is_better
+    params: {normalise_by_expected: true}
+    bands:
+      - {label: on_time, limit: 1.2, score: 1.0}
+      - {label: slow, limit: 2.0, score: 0.6}
+      - {label: very_slow, score: 0.2}

@@ -1,0 +1,41 @@
+# Flat test area — no external data. Used by Phase 1 (core loop) and by CI
+# smoke tests: a 1 km square at a fixed elevation with two pads.
+# Origin coordinates are arbitrary; the world is a flat plane.
+
+schema_version: 1
+id: flat_test
+name: Flat test range
+version: 1.0.0
+classification: public
+description: Synthetic flat plane for SITL core-loop tests and deterministic replay.
+
+bounds: {min_lat: 17.3955, min_lon: 78.4953, max_lat: 17.4045, max_lon: 78.5047}
+origin: {lat_deg: 17.4000, lon_deg: 78.5000, alt_msl_m: 500.0}
+
+crs:
+  geographic: EPSG:4326
+  projected: EPSG:32644
+
+sources:
+  - {id: flat, kind: flat, name: Synthetic flat plane, licence: CDPL (generated)}
+
+tile_layers: []
+
+elevation:
+  source: flat
+  flat_elevation_m: 500.0
+
+mesh:
+  kind: none
+
+landing_pads:
+  - {id: pad_home, name: Home pad, position: {lat_deg: 17.4000, lon_deg: 78.5000}, heading_deg: 0, size_m: 2.0, marker: apriltag, marker_id: 0}
+  - {id: pad_target, name: Target pad (50 m north), position: {lat_deg: 17.40045, lon_deg: 78.5000}, heading_deg: 0, size_m: 2.0, marker: apriltag, marker_id: 1}
+
+weather:
+  wind_speed_mps: 0.0
+  wind_from_deg: 0
+  turbulence: none
+  temperature_c: 25
+  visibility_m: 10000
+  time_of_day_local: "12:00"
