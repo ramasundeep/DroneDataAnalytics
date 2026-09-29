@@ -125,9 +125,10 @@ phases would be blocked by slippage in an earlier one.
 - **Origin criterion (verbatim).** "scripted takeoff–waypoint–land runs headless and produces a session file that replays deterministically."
 - **Added testable criteria.**
   1. `sitl_core_loop` (seed 1, sim rate 1.0) completes headless: vehicle
-     reaches 10 m, passes within 2 m of the waypoint, lands within 1 m of
-     `pad_home`… as flown by the mission; a `landing_touchdown` outcome is
-     recorded.
+     takes off from `pad_home`, reaches 10 m, passes within 2 m of the
+     waypoint 50 m north, and lands within 2 m of the mission's land point
+     (the `pad_target` position); a `landing_touchdown` outcome is recorded
+     (tolerances to be confirmed in the Phase 1 plan).
   2. The session file contains `session.json`, `events.pb`, `telemetry.pb`
      (50 Hz), `controls.pb`, all ordered by `(sim_time_us, seq)`, with no
      `seq` gaps per producer.

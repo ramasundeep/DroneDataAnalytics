@@ -488,7 +488,7 @@ and are provisional):
   only be reachable on a trusted LAN. Instructor/trainee login and roles
   arrive with trainee records (Phase 4).
 - **Data classification:** restricted areas and CDPL CAD never enter public
-  bundles ([03 §10](03_DIGITAL_TERRAIN_TWINS.md#10-classification-and-handling)).
+  bundles ([03 §9](03_DIGITAL_TERRAIN_TWINS.md#9-classification-and-handling)).
   Trainee audio is recorded only with consent and deleted per
   `audio_retention_days` ([ADR 0013](ADR/0013-audio-opus-whisper.md)).
 - **Supply chain:** images are pinned by tag; for air-gap, CDPL mirrors all

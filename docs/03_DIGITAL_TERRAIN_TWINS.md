@@ -59,7 +59,7 @@ Unknown keys are errors (`additionalProperties: false`).
 | `name` | string | — | yes | Display name. |
 | `version` | semver | — | yes | Version of the area definition *and* the built package (§5). |
 | `description` | string | — | no | Purpose of the area. |
-| `classification` | `public` \| `restricted` | — | no (default `public`) | `public` = built only from open data. `restricted` = contains CDPL/customer-supplied data (photogrammetry, surveys, sensitive annotations); handling rules §10. |
+| `classification` | `public` \| `restricted` | — | no (default `public`) | `public` = built only from open data. `restricted` = contains CDPL/customer-supplied data (photogrammetry, surveys, sensitive annotations); handling rules §9. |
 | `bounds.min_lat`, `min_lon`, `max_lat`, `max_lon` | number | degrees WGS 84 | yes | Axis-aligned geographic box of the area. All pads, targets and the origin must lie inside. Keep areas smaller than ~20 km across (§3.4). |
 | `origin.lat_deg`, `lon_deg` | number | degrees WGS 84 | yes | **Local tangent-plane origin** of the area: UE5 world origin, origin of recorded local positions, and SITL `--home` ([05 §7](05_SITL_INTEGRATION.md#7-home-location)). |
 | `origin.alt_msl_m` | number | m above mean sea level (vertical datum) | no | Height of the origin. Set to ground elevation at the origin (refined from the DEM at build). |
@@ -109,7 +109,7 @@ Unknown keys are errors (`additionalProperties: false`).
 
 | Field | Type | Units | Meaning |
 |---|---|---|---|
-| `kind` | `none` \| `3d_tiles` \| `heightmap_landscape` | — | `heightmap_landscape`: 16-bit heightmap for a UE5 Landscape (DEM areas). `3d_tiles`: OGC 3D Tiles tileset (photogrammetry, §9). `none`: flat plane or no 3D. |
+| `kind` | `none` \| `3d_tiles` \| `heightmap_landscape` | — | `heightmap_landscape`: 16-bit heightmap for a UE5 Landscape (DEM areas). `3d_tiles`: OGC 3D Tiles tileset (photogrammetry, §8). `none`: flat plane or no 3D. |
 | `source` | source id | — | Input for the mesh. |
 | `geometric_error_m` | number ≥ 0 | m | Root geometric error for 3D Tiles LOD selection. |
 
@@ -267,7 +267,7 @@ flowchart LR
 | 3 | **clip** | sources → clipped, reprojected rasters/vectors | GDAL (`gdalwarp` to `crs.projected`, cutline to bounds + one-tile margin), OGR (`ogr2ogr -clipsrc`) for OSM extracts (`osmium` for PBF extracts). |
 | 4 | **tile** | clipped data → `tiles/<layer>/{z}/{x}/{y}.<fmt>` | GDAL (`gdal2tiles`-style XYZ pyramid or `gdalwarp` per tile to EPSG:3857); a small Python encoder for terrain-RGB; `tippecanoe` for vector tiles. |
 | 5 | **DEM COG** | DEM → `elevation/dem.tif` | `gdalwarp -r bilinear -tr <resolution_m>` then `gdal_translate -of COG`; vertical datum conversion to EGM96 if the source differs. |
-| 6 | **mesh / heightmap** | DEM → `mesh/heightmap.png`; photogrammetry → `mesh/tileset.json` + tiles | GDAL (`gdal_translate -ot UInt16 -scale`) to a UE-Landscape-compatible size (e.g. 1009 / 2017 / 4033 px square); for 3D Tiles, open-source photogrammetry/tiling tools (§9). |
+| 6 | **mesh / heightmap** | DEM → `mesh/heightmap.png`; photogrammetry → `mesh/tileset.json` + tiles | GDAL (`gdal_translate -ot UInt16 -scale`) to a UE-Landscape-compatible size (e.g. 1009 / 2017 / 4033 px square); for 3D Tiles, open-source photogrammetry/tiling tools (§8). |
 | 7 | **package** | all outputs + `area.yaml` + `package.json` + `weather/default.json` → `<id>-<version>.tar.zst` | `tar` + `zstd`. |
 | 8 | **upload** | tarball → MinIO `cdsim-areas/<id>/<id>-<version>.tar.zst` | MinIO Python client (as used by `cdsim_common.bootstrap`). |
 
@@ -406,7 +406,7 @@ photogrammetry. Ingest path:
    `url` (delivered by hand), `licence: CDPL proprietary`, `sha256` of the
    delivered archive; `mesh: {kind: 3d_tiles, source: <that id>}`. Add the
    orthomosaic as an `imagery` source for map tiles.
-4. Set `classification: restricted` (§10).
+4. Set `classification: restricted` (§9).
 5. `cdsim-area package` copies the tileset under `mesh/`, checksums it, and
    packages as usual.
 
@@ -414,10 +414,6 @@ Mixed areas are normal: DEM heightmap for the wide area, 3D Tiles for the
 flown patch.
 
 ## 9. Classification and handling
-
-(Kept as §9 in the flow; the anchor below is referenced from other docs.)
-
-## 10. Classification and handling
 
 | | `public` | `restricted` |
 |---|---|---|
@@ -437,7 +433,7 @@ Rules:
 - Attribution for open data (`licence` field) must be shown in the console
   and listed in `docs/THIRD_PARTY.md`.
 
-## 11. How to add an area
+## 10. How to add an area
 
 1. **Scaffold:**
    ```bash
@@ -469,7 +465,7 @@ Rules:
    `HOME_LOC` = the origin ([05 §7](05_SITL_INTEGRATION.md#7-home-location)).
 7. **Docs/PR:** CHANGELOG entry, attribution added, classification stated.
 
-## 12. The included areas
+## 11. The included areas
 
 | | `flat_test` | `hyd_demo_01` |
 |---|---|---|
