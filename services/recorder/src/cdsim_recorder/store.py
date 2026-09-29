@@ -93,11 +93,16 @@ class ListPublisher:
 class PostgresEventStore:
     """TimescaleDB-backed store (schema: services/recorder/db/001_init.sql)."""
 
+    # Idempotent on event_id across requests: a per-event advisory lock
+    # serialises concurrent writers of the same id, then NOT EXISTS skips
+    # anything already stored. (A unique index cannot do this on a hypertable
+    # partitioned by recorded_at — see db/001_init.sql.)
+    _LOCK = "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))"
     _INSERT = (
         "INSERT INTO events (session_id, sim_time_us, seq, wall_time_us, event_id, "
         "related_event_id, actor_id, source, family, code, body) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-        "ON CONFLICT DO NOTHING"
+        "SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s "
+        "WHERE NOT EXISTS (SELECT 1 FROM events WHERE event_id = %s)"
     )
 
     def __init__(self, dsn: str) -> None:
@@ -122,11 +127,17 @@ class PostgresEventStore:
             )
             for e in events
         ]
-        async with await psycopg.AsyncConnection.connect(self._dsn) as conn:
-            async with conn.cursor() as cur:
-                await cur.executemany(self._INSERT, rows)
-            await conn.commit()
-        return len(rows)
+        stored = 0
+        async with (
+            await psycopg.AsyncConnection.connect(self._dsn) as conn,
+            conn.transaction(),
+            conn.cursor() as cur,
+        ):
+            for row in rows:
+                await cur.execute(self._LOCK, (row[4],))
+                await cur.execute(self._INSERT, (*row, row[4]))
+                stored += cur.rowcount
+        return stored
 
     async def read(
         self,

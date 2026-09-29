@@ -36,7 +36,10 @@ CREATE TABLE IF NOT EXISTS events (
 );
 SELECT create_hypertable('events', 'recorded_at', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS events_session_time ON events (session_id, sim_time_us, seq);
-CREATE UNIQUE INDEX IF NOT EXISTS events_event_id ON events (event_id, recorded_at);
+-- Idempotency on event_id is enforced by the recorder (advisory lock +
+-- NOT EXISTS), because TimescaleDB unique indexes must include the
+-- partition column and a retry arrives with a different recorded_at.
+CREATE INDEX IF NOT EXISTS events_event_id ON events (event_id);
 
 CREATE TABLE IF NOT EXISTS vehicle_state (
     recorded_at     TIMESTAMPTZ NOT NULL DEFAULT now(),

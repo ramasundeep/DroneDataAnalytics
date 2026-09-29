@@ -30,3 +30,20 @@ def test_event_roundtrip_is_sim_time_ordered() -> None:
     assert r.json()["stored"] == 2
     got = httpx.get(f"{RECORDER}/v1/sessions/{sid}/events").json()
     assert [e["stimulus"]["code"] for e in got] == ["a", "c"]
+
+
+def test_retried_batch_is_not_stored_twice() -> None:
+    """Idempotency across separate requests (different recorded_at)."""
+    sid = f"it-{uuid.uuid4()}"
+    batch = {
+        "events": [
+            {
+                "eventId": str(uuid.uuid4()),
+                "header": {"simTimeUs": 5, "sessionId": sid, "actorId": "it"},
+                "annotation": {"text": "once"},
+            }
+        ]
+    }
+    assert httpx.post(f"{RECORDER}/v1/events", json=batch).json()["stored"] == 1
+    assert httpx.post(f"{RECORDER}/v1/events", json=batch).json()["stored"] == 0
+    assert len(httpx.get(f"{RECORDER}/v1/sessions/{sid}/events").json()) == 1
