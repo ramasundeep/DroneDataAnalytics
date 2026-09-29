@@ -34,7 +34,7 @@ machine without the engine), the body must say so.
 
 1. Open as **draft** early; mark ready when the checklist below is ticked.
 2. Fill the PR template (`.github/pull_request_template.md`).
-3. At least one approving review from a CODEOWNER of each touched area.
+3. At least one approving review (from a code owner of each touched area once `.github/CODEOWNERS` is populated).
 4. CI must be green. Never skip or disable a test to get green — fix it or
    raise it.
 5. Squash-merge by default; the squash message follows Conventional Commits.
