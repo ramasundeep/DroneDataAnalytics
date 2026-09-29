@@ -356,6 +356,6 @@ or a doc update.
 | 7 | **Rubric calibration**: who provides instructor-graded sessions; should `voice.onset` count as a correct decision; should reaction time include voice/menu responses. | Phase 3 | [06 §14](06_ASSESSMENT_ENGINE.md#14-open-questions). |
 | 8 | **Default audio retention** per deployment and consent wording. | Phase 3 | [06 §11](06_ASSESSMENT_ENGINE.md#11-audio-consent-and-retention). |
 | 9 | **Landing-pad marker spec**: AprilTag family and printed tag size (not in `area.yaml` today). | Phase 7 (Phase 2 for rendering) | [08 §5.1](08_AUTONOMY_TRAINING.md#51-pad-pose-estimation-apriltag). |
-| 10 | **Offline OS prerequisites** (Docker Engine, GPU drivers) — part of the bundle or provided by IT? | Phase 8 | [09 §6](09_DEPLOYMENT_OFFLINE.md#6-installation-procedure-field-box-lab-server). |
+| 10 | **Offline OS prerequisites** (Docker Engine, GPU drivers) — part of the bundle or provided by IT? | Phase 8 | [09 §6](09_DEPLOYMENT_OFFLINE.md#6-installation-procedure-field-box-or-lab-server). |
 | 11 | **PDF report library** choice. | Phase 3 | Must be offline and open-source. |
 | 12 | **Windows installer signing** and client distribution. | Phase 8 | |

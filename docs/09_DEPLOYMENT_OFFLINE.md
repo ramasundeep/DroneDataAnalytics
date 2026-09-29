@@ -75,7 +75,7 @@ On a developer laptop, Windows hosts run the services in Docker Desktop's
 Linux VM or WSL2; Linux hosts run everything natively. `make dev` starts
 `core + terrain + lms`; `sitl`, `multiplayer` and `rl` are opt-in.
 
-## 4. Recommended hardware — PROVISIONAL
+## 4. Recommended hardware (provisional)
 
 > **PROVISIONAL.** These are starting recommendations derived from Unreal
 > Engine 5 and service requirements, **not** validated on real CD Sim
@@ -99,7 +99,7 @@ preferred so the training VLAN can be enforced. Fleet traffic is estimated
 at well under 1 Mbit/s per seat ([07 §3.5](07_TRAINING_MODES.md#35-bandwidth-and-latency-provisional-estimates));
 a gigabit switch leaves large headroom.
 
-## 5. Air-gap bundle — `make deploy-box` (Phase 8 design)
+## 5. Air-gap bundle: `make deploy-box` (Phase 8 design)
 
 `make deploy-box` will produce one directory (and a tarball of it) that
 contains **everything** needed to install or update a box without network.
@@ -151,7 +151,7 @@ Build steps (on a build machine *with* network):
 8. Build the docs site (`make docs`), copy licences/attributions.
 9. Write `manifest.json` and `SHA256SUMS`.
 
-## 6. Installation procedure (field box / lab server)
+## 6. Installation procedure (field box or lab server)
 
 Prerequisites (installed once, from offline media prepared by IT): Linux
 LTS, Docker Engine, Docker Compose v2, `zstd`. Offline OS package
