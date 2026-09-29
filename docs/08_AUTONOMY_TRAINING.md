@@ -329,10 +329,11 @@ local storage/MinIO; no online experiment trackers.
    rate, timeout rate; radial error median / p95; touchdown vertical speed
    median / p95; tilt at touchdown; time to land.
 4. Score each episode's landing metrics with the assessment engine.
-   `precision_landing_v1` lists `autonomy` in `applies_to`, but its
-   reaction/decision/comms metrics are not measurable for a policy and would
-   score as "not measured" (0, fail). Phase 7 adds a dedicated
-   `autonomy_landing_v1` rubric with only landing metrics.
+   `precision_landing_v1` is for human pilots only (its reaction/decision/
+   comms metrics are not measurable for a policy and would score as "not
+   measured": 0, fail), so it does not list `autonomy` in `applies_to`.
+   Phase 7 adds a dedicated `autonomy_landing_v1` rubric with only landing
+   metrics.
 5. Robustness sweeps outside the training ranges (stronger wind, darker
    lighting, sensor dropout via `Inject`) reported separately.
 6. A checkpoint is exportable only if it meets thresholds agreed with the

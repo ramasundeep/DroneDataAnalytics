@@ -106,7 +106,7 @@ phases would be blocked by slippage in an earlier one.
     environment; a locally built MinIO stand-in was used via
     `CDSIM_MINIO_IMAGE`. The pinned tag still has to be verified.
   - *Not run:* any UE5 build (all of `sim/` is **UNVERIFIED BUILD**); the
-    SITL image build; GitHub Actions workflows; `make docs` against the
+    SITL image build; the CI workflows (never executed in CI); `make docs` against the
     final doc set (to be run at review); the "one day" onboarding criterion
     (needs a real new engineer).
 

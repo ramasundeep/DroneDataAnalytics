@@ -92,7 +92,7 @@ Unknown keys are errors (`additionalProperties: false`).
 | Field | Type | Units | Req. | Meaning |
 |---|---|---|---|---|
 | `id` | id string | — | yes | Layer name in tile URLs (`/v1/tiles/<area>/<layer>/…`). |
-| `kind` | `raster` \| `terrain_rgb` \| `vector` | — | yes | `raster`: imagery. `terrain_rgb`: elevation encoded in RGB (Mapbox Terrain-RGB encoding: `h = −10000 + (R·65536 + G·256 + B) × 0.1` m). `vector`: Mapbox Vector Tiles (protobuf). |
+| `kind` | `raster` \| `terrain_rgb` \| `vector` | — | yes | `raster`: imagery. `terrain_rgb`: elevation encoded in RGB (the common terrain-RGB encoding: `h = −10000 + (R·65536 + G·256 + B) × 0.1` m). `vector`: vector tiles (MVT, protobuf). |
 | `source` | source id | — | yes | Input dataset. |
 | `min_zoom`, `max_zoom` | int 0–22 | XYZ zoom | yes | Pyramid range (Web-Mercator "slippy map" scheme). `min_zoom ≤ max_zoom`. |
 | `format` | `png` \| `webp` \| `jpg` \| `pbf` | — | no (png) | Tile encoding. Use `png` for `terrain_rgb` (lossless), `webp`/`jpg` for imagery, `pbf` for vectors. |

@@ -9,7 +9,7 @@ schema_version: 1
 id: precision_landing_v1
 name: Precision landing — single seat
 version: 1.0.0
-applies_to: [pilot_single, pilot_fleet, autonomy]
+applies_to: [pilot_single, pilot_fleet]   # autonomy gets its own rubric in Phase 7 (docs/08)
 pass_threshold: 0.70
 
 metrics:

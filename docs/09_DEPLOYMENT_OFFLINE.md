@@ -71,8 +71,8 @@ flowchart LR
 | Instructor console | Linux (served), any browser | container image (nginx) | `lms` |
 | ArduPilot SITL | Linux | container image (one per vehicle) | `sitl` |
 
-On a developer laptop, Windows hosts run the services in Docker Desktop's
-Linux VM or WSL2; Linux hosts run everything natively. `make dev` starts
+On a developer laptop, Windows hosts run the services in a Linux VM with
+Docker Engine; Linux hosts run everything natively. `make dev` starts
 `core + terrain + lms`; `sitl`, `multiplayer` and `rl` are opt-in.
 
 ## 4. Recommended hardware (provisional)
