@@ -11,6 +11,11 @@ extend-exclude = ["tools/flight-log-analyser", "schemas/gen", "sim", "apps"]
 select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
 ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
 
+[tool.ruff.lint.per-file-ignores]
+# Scaffolders embed file templates (YAML / C++) whose lines must stay verbatim.
+"scripts/new_platform.py" = ["E501"]
+"scripts/new_area.py" = ["E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = [
   "cdsim_common", "cdsim_api", "cdsim_recorder", "cdsim_assessment",

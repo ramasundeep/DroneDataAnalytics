@@ -21,7 +21,7 @@ from cdsim_api.catalogue import AreaSummary, Catalogue, ScenarioSummary
 from cdsim_api.system import SystemHealth, probe_all
 from cdsim_common.config import Settings, get_settings
 from cdsim_common.deps import minio_check, postgres_check, redis_check
-from cdsim_common.health import OFFLINE_DOCS, Check, health_router
+from cdsim_common.health import Check, health_router
 
 SERVICE = "api"
 
@@ -44,7 +44,8 @@ def create_app(settings: Settings | None = None, with_infra_checks: bool = True)
         }
 
     app = FastAPI(
-        **OFFLINE_DOCS,
+        docs_url=None,  # Swagger/ReDoc load JS from a CDN: offline-first
+        redoc_url=None,
         title="CD Sim API",
         version=__version__,
         description="Chakravyuha Dynamics CD Sim platform API. Offline-first.",

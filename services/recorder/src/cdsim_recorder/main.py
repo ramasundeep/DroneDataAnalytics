@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from cdsim_common.config import Settings, get_settings
 from cdsim_common.deps import minio_check, postgres_check, redis_check
 from cdsim_common.events import Event, EventBatch, EventFamily
-from cdsim_common.health import OFFLINE_DOCS, health_router
+from cdsim_common.health import health_router
 from cdsim_recorder import __version__
 from cdsim_recorder.store import (
     EventPublisher,
@@ -46,7 +46,7 @@ def create_app(
     settings = settings or get_settings()
     logging.basicConfig(level=settings.log_level)
     use_infra = store is None
-    app = FastAPI(title="CD Sim Recorder", version=__version__, **OFFLINE_DOCS)
+    app = FastAPI(title="CD Sim Recorder", version=__version__, docs_url=None, redoc_url=None)
     app.state.store = store or PostgresEventStore(settings.db_dsn)
     app.state.publisher = publisher or RedisPublisher(settings.redis_url)
     checks = (

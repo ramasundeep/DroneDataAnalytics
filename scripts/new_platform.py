@@ -119,7 +119,7 @@ def main(argv: list[str]) -> int:
     (pdir / "meshes").mkdir(exist_ok=True)
     (pdir / "meshes" / "README.md").write_text(
         f"# {pid} — meshes\n\nPlace CAD (STEP) and exported FBX here (Git LFS). "
-        "See docs/04_PLATFORM_PLUGIN_SPEC.md §\"Swapping in real CAD\".\n",
+        'See docs/04_PLATFORM_PLUGIN_SPEC.md §"Swapping in real CAD".\n',
         encoding="utf-8",
     )
 

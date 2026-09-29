@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from cdsim_common.config import Settings, get_settings
-from cdsim_common.health import OFFLINE_DOCS, Check, health_router
+from cdsim_common.health import Check, health_router
 from cdsim_terrain import __version__
 from cdsim_terrain.registry import AreaRegistry, AreaStatus
 
@@ -50,7 +50,9 @@ def _base(name: str, settings: Settings | None) -> tuple[FastAPI, AreaRegistry]:
             raise RuntimeError(f"areas dir {settings.areas_dir} not mounted")
 
     checks: dict[str, Check] = {"areas_dir": areas_dir_ok, "manifests": manifests_ok}
-    app = FastAPI(title=f"CD Sim terrain — {name}", version=__version__, **OFFLINE_DOCS)
+    app = FastAPI(
+        title=f"CD Sim terrain — {name}", version=__version__, docs_url=None, redoc_url=None
+    )
     app.state.registry = registry
     app.include_router(health_router(f"terrain-{name}", __version__, checks))
 
