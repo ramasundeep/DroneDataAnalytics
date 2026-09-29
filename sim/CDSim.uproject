@@ -1,0 +1,30 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.4",
+	"Category": "Simulation",
+	"Description": "CD Sim - Chakravyuha Dynamics mission-rehearsal, training and simulation platform. UNVERIFIED BUILD: see docs/BUILDING_UE5.md.",
+	"Modules": [
+		{
+			"Name": "CDSim",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "OpenXR",
+			"Enabled": true,
+			"TargetDenyList": [
+				"Server"
+			]
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "CDSimPlatform_cdpl_quad_01",
+			"Enabled": true
+		}
+	]
+}

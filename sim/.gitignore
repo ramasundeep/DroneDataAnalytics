@@ -1,0 +1,13 @@
+# Generated at build time by scripts/ue5/export_platform_json.py from
+# platforms/<id>/platform.yaml and terrain/areas/<id>/area.yaml.
+# The YAML manifests are the source of truth; never hand-edit or commit these.
+Config/Platforms/
+Config/Areas/
+
+# UE generated folders (also covered by the root .gitignore)
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Plugins/*/Binaries/
+Plugins/*/Intermediate/

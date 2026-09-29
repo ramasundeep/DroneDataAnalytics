@@ -1,0 +1,72 @@
+# CD Sim — UE 5.4 build (manual only).
+#
+# UNVERIFIED BUILD: the UE5 project has never been compiled. This workflow
+# exists so the first engineer with a UE-capable machine can register it as a
+# runner and get a reproducible build. See docs/BUILDING_UE5.md.
+#
+# REQUIREMENTS: a SELF-HOSTED runner labelled `ue5` with
+#   * Unreal Engine 5.4 installed (source build on Linux; source build on
+#     Windows if the server target is wanted) and the env var UE_ROOT pointing
+#     at it (set it in the runner's .env file or service environment);
+#   * git-lfs, Python 3.11 with PyYAML.
+# The runner is expected to be Linux (build.sh). A Windows runner would run
+# scripts/ue5/build.ps1 instead; add a matrix entry when one exists.
+# Hosted runners cannot do this: the engine is ~100 GB and not redistributable.
+# Nothing here reaches the internet at build time beyond the git checkout.
+
+name: ue5-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to build"
+        type: choice
+        options: [all, editor, game, server]
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ue5-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: [self-hosted, ue5]
+    timeout-minutes: 240
+    steps:
+      - name: Checkout (with LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Check UE_ROOT
+        shell: bash
+        run: |
+          if [ -z "${UE_ROOT:-}" ]; then
+            echo "::error::UE_ROOT is not set on this runner (see docs/BUILDING_UE5.md)"
+            exit 1
+          fi
+          echo "UE_ROOT=$UE_ROOT"
+
+      - name: Build
+        shell: bash
+        run: scripts/ue5/build.sh --target "${{ inputs.target }}"
+
+      - name: Collect logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p build/ue5-logs
+          cp -r sim/Saved/Logs build/ue5-logs/project 2>/dev/null || true
+          cp -r "${UE_ROOT:-/nonexistent}/Engine/Programs/AutomationTool/Saved/Logs" build/ue5-logs/uat 2>/dev/null || true
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ue5-build-logs
+          path: build/ue5-logs/
+          if-no-files-found: ignore

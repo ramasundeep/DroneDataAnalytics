@@ -88,6 +88,14 @@ def render_json(data: dict[str, Any], source: str) -> str:
     return json.dumps(document, indent=2, ensure_ascii=False, default=str) + "\n"
 
 
+def display(path: Path, root: Path) -> str:
+    """Path relative to the repo root when possible, for messages."""
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def discover(root: Path, kind: ManifestKind) -> list[Path]:
     """All manifests of a kind, skipping directories that start with '_'."""
     found: list[Path] = []
@@ -100,7 +108,9 @@ def discover(root: Path, kind: ManifestKind) -> list[Path]:
     return found
 
 
-def export_kind(root: Path, out_root: Path, kind: ManifestKind, check: bool) -> tuple[int, list[str]]:
+def export_kind(
+    root: Path, out_root: Path, kind: ManifestKind, check: bool
+) -> tuple[int, list[str]]:
     """Export (or check) every manifest of one kind. Returns (count, problems)."""
     problems: list[str] = []
     out_dir = out_root / kind.out_subdir
@@ -114,7 +124,9 @@ def export_kind(root: Path, out_root: Path, kind: ManifestKind, check: bool) -> 
             problems.append(f"{relative}: {exc}")
             continue
         if ident != manifest.parent.name:
-            problems.append(f"{relative}: id '{ident}' does not match directory '{manifest.parent.name}'")
+            problems.append(
+                f"{relative}: id '{ident}' does not match directory '{manifest.parent.name}'"
+            )
             continue
 
         target = out_dir / f"{ident}.json"
@@ -122,25 +134,29 @@ def export_kind(root: Path, out_root: Path, kind: ManifestKind, check: bool) -> 
         if check:
             current = target.read_text(encoding="utf-8") if target.is_file() else None
             if current != text:
-                problems.append(f"{target.relative_to(root).as_posix()} is missing or stale")
+                problems.append(f"{display(target, root)} is missing or stale")
         else:
             out_dir.mkdir(parents=True, exist_ok=True)
             target.write_text(text, encoding="utf-8")
-            print(f"  {kind.name:<8} {relative} -> {target.relative_to(root).as_posix()}")
+            print(f"  {kind.name:<8} {relative} -> {display(target, root)}")
         count += 1
     return count, problems
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
-    parser.add_argument("--repo-root", type=Path, default=default_repo_root(), help="repository root")
+    parser.add_argument(
+        "--repo-root", type=Path, default=default_repo_root(), help="repository root"
+    )
     parser.add_argument(
         "--out",
         type=Path,
         default=None,
         help="output Config directory (default: <repo-root>/sim/Config)",
     )
-    parser.add_argument("--check", action="store_true", help="do not write; exit 1 if output is stale")
+    parser.add_argument(
+        "--check", action="store_true", help="do not write; exit 1 if output is stale"
+    )
     args = parser.parse_args(argv)
 
     root: Path = args.repo_root.resolve()

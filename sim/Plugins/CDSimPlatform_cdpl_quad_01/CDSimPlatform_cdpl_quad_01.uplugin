@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "CD Sim Platform - CDPL Quad 01 (placeholder)",
+	"Description": "Visuals and part anchors for platform cdpl_quad_01 (platforms/cdpl_quad_01/platform.yaml). Placeholder geometry from engine basic shapes until CAD arrives. UNVERIFIED BUILD.",
+	"Category": "CD Sim|Platforms",
+	"CreatedBy": "Chakravyuha Dynamics Private Limited",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "CDSimPlatform_cdpl_quad_01",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
